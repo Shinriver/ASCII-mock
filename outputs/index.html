@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLOOM.SEQ — ROSE 042</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+<style>
+  :root {
+    --ink: #c9c6e0;
+    --ink-dim: #8d8aa8;
+    --line: rgba(230, 228, 245, 0.55);
+    --line-soft: rgba(230, 228, 245, 0.16);
+    --accent: #a7a2f0;
+    --status: #8ee08a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #000000;
+    color: var(--ink);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    background: #050507;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 30px 80px rgba(0, 0, 0, 0.65),
+      0 0 120px rgba(167, 162, 240, 0.06);
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 12px;
+    letter-spacing: 0.6px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink);
+  }
+
+  .status-dot {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--status);
+    box-shadow: 0 0 8px rgba(142, 224, 138, 0.8);
+    animation: blink 1.4s steps(2, start) infinite;
+  }
+
+  @keyframes blink { 50% { opacity: 0.12; } }
+
+  .head-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink-dim);
+  }
+
+  .meta { font-size: 11px; }
+
+  .ghost {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--line-soft);
+    color: var(--ink-dim);
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .ghost:hover { color: var(--ink); border-color: var(--line); }
+  .ghost.active { color: var(--ink); border-color: var(--accent); }
+
+  .stage { position: relative; line-height: 0; }
+
+  .stage canvas { display: block; background: #000; }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .scanlines {
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0.16) 2px,
+      rgba(0, 0, 0, 0.16) 4px
+    );
+    opacity: 0.35;
+  }
+
+  .vignette {
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 56%, rgba(0, 0, 0, 0.38) 100%);
+  }
+
+  .overlay[hidden],
+  .vignette[hidden] { display: none; }
+
+  .dbg {
+    margin: 0 0 10px;
+    padding: 6px 8px;
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    color: var(--ink-dim);
+    font-size: 10px;
+    line-height: 1.5;
+    white-space: pre-line;
+  }
+
+  .clickstart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(5, 5, 7, 0.72);
+    color: var(--ink);
+    font-size: 13px;
+    letter-spacing: 1.2px;
+    backdrop-filter: blur(2px);
+  }
+
+  .clickstart[hidden] { display: none; }
+
+  .fps {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(5, 5, 7, 0.6);
+    padding: 3px 7px;
+    border-radius: 5px;
+    border: 1px solid var(--line-soft);
+    pointer-events: none;
+  }
+
+  .fps[hidden] { display: none; }
+
+  .panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 248px;
+    max-height: calc(100% - 24px);
+    overflow: auto;
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(10, 10, 15, 0.82);
+    border: 1px solid var(--line-soft);
+    backdrop-filter: blur(8px);
+    font-size: 11px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .panel[hidden] { display: none; }
+
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .ctrl {
+    display: grid;
+    grid-template-columns: 88px 1fr 42px;
+    align-items: center;
+    gap: 8px;
+    margin: 9px 0;
+  }
+
+  .ctrl label { color: var(--ink-dim); }
+
+  .ctrl output { text-align: right; color: var(--ink); }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+
+  input[type="color"] {
+    width: 34px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid var(--line-soft);
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 9px 0;
+  }
+
+  .row select, .row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 1px solid var(--line-soft);
+    color: var(--ink);
+    font: inherit;
+    font-size: 11px;
+    padding: 4px 6px;
+    border-radius: 5px;
+  }
+
+  .row select { width: 100%; }
+  .row select option { background: #0a0a0f; }
+
+  .btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .btn-grid .ghost { padding: 7px 6px; }
+</style>
+</head>
+<body>
+  <main class="card" id="card">
+    <header class="card-head">
+      <div class="brand">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span class="title">// BLOOM.SEQ — ROSE 042</span>
+      </div>
+      <div class="head-actions">
+        <span class="meta">LIVE · LOOP</span>
+        <button id="fpsBtn" class="ghost" type="button">FPS</button>
+        <button id="tuneBtn" class="ghost" type="button">TUNE</button>
+      </div>
+    </header>
+
+    <div class="stage" id="stage">
+      <div class="overlay scanlines" id="scanlines" hidden></div>
+      <div class="overlay vignette" id="vignette" hidden></div>
+      <div class="overlay clickstart" id="clickstart">▶ CLICK TO START</div>
+      <div class="fps" id="fps" hidden>0 FPS</div>
+
+      <div class="panel" id="panel" hidden>
+        <h2>// TUNING</h2>
+        <div class="dbg" id="dbg"></div>
+
+        <div class="row">
+          <label for="ctrlBgMode">BACKGROUND</label>
+          <select id="ctrlBgMode">
+            <option value="green">green-screen</option>
+            <option value="colorkey">color-key</option>
+            <option value="black" selected>black-background</option>
+            <option value="white">white-background</option>
+            <option value="off">off</option>
+          </select>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlCols">RESOLUTION</label>
+          <input id="ctrlCols" type="range" min="48" max="240" step="4" value="180">
+          <output id="outCols">180</output>
+        </div>
+
+        <div class="row">
+          <label for="ctrlBayer">BAYER</label>
+          <select id="ctrlBayer">
+            <option value="4">4 × 4</option>
+            <option value="8" selected>8 × 8</option>
+          </select>
+          <label for="ctrlKey">KEY</label>
+          <input id="ctrlKey" type="color" value="#00d414">
+        </div>
+
+        <div class="row">
+          <label for="ctrlTintColor">TINT</label>
+          <input id="ctrlTintColor" type="color" value="#e8e5f7">
+          <label for="ctrlBg">BG</label>
+          <input id="ctrlBg" type="color" value="#000000">
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlThresh">KEY THRESH</label>
+          <input id="ctrlThresh" type="range" min="0" max="0.4" step="0.005" value="0.06">
+          <output id="outThresh">0.06</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlSoft">KEY SOFT</label>
+          <input id="ctrlSoft" type="range" min="0" max="0.5" step="0.005" value="0.10">
+          <output id="outSoft">0.10</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlCutoff">FG CUTOFF</label>
+          <input id="ctrlCutoff" type="range" min="0" max="1" step="0.01" value="0.08">
+          <output id="outCutoff">0.08</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlGreen">GREEN DOM</label>
+          <input id="ctrlGreen" type="range" min="-0.1" max="0.4" step="0.005" value="0.05">
+          <output id="outGreen">0.05</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlSpill">SPILL</label>
+          <input id="ctrlSpill" type="range" min="0" max="1" step="0.01" value="0.35">
+          <output id="outSpill">0.35</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlBgOpacity">BG OPACITY</label>
+          <input id="ctrlBgOpacity" type="range" min="0" max="1" step="0.01" value="1">
+          <output id="outBgOpacity">1.00</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlTint">TINT</label>
+          <input id="ctrlTint" type="range" min="0" max="1" step="0.01" value="0.45">
+          <output id="outTint">0.45</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlGlitch">GLITCH</label>
+          <input id="ctrlGlitch" type="range" min="0" max="0.15" step="0.002" value="0.015">
+          <output id="outGlitch">0.015</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlNoise">NOISE</label>
+          <input id="ctrlNoise" type="range" min="0" max="0.1" step="0.002" value="0.05">
+          <output id="outNoise">0.05</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlContrast">CONTRAST</label>
+          <input id="ctrlContrast" type="range" min="0.6" max="2.5" step="0.05" value="1.7">
+          <output id="outContrast">1.70</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlEdge">EDGE</label>
+          <input id="ctrlEdge" type="range" min="0" max="2" step="0.05" value="0.8">
+          <output id="outEdge">0.80</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlLocal">LOCAL CONTRAST</label>
+          <input id="ctrlLocal" type="range" min="0" max="2" step="0.05" value="0.9">
+          <output id="outLocal">0.90</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlCrease">CREASE</label>
+          <input id="ctrlCrease" type="range" min="0" max="1.5" step="0.05" value="0.65">
+          <output id="outCrease">0.65</output>
+        </div>
+
+        <div class="ctrl">
+          <label for="ctrlSubject">SUBJECT BOOST</label>
+          <input id="ctrlSubject" type="range" min="0" max="1.5" step="0.05" value="0.8">
+          <output id="outSubject">0.80</output>
+        </div>
+
+        <div class="row">
+          <label for="ctrlRamp">RAMP</label>
+          <input id="ctrlRamp" type="text" value=" .:-=+*#%@">
+        </div>
+
+        <div class="btn-grid">
+          <button id="restartBtn" class="ghost" type="button">RESTART</button>
+          <button id="reverseBtn" class="ghost" type="button">REVERSE LOOP</button>
+          <button id="scanBtn" class="ghost" type="button">SCANLINES</button>
+          <button id="vignetteBtn" class="ghost" type="button">VIGNETTE</button>
+          <button id="matteBtn" class="ghost" type="button">MATTE</button>
+          <button id="sampleKeyBtn" class="ghost" type="button">SAMPLE BG</button>
+          <button id="loadBtn" class="ghost" type="button">LOAD VIDEO</button>
+          <button id="resetBtn" class="ghost" type="button">DEFAULTS</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <input id="fileInput" type="file" accept="video/*" hidden>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    const DEFAULTS = {
+      videoUrl: 'flower.mp4',
+      cols: 180,
+      rows: 0,
+      bayerSize: 8,
+      glyphRamp: ' .:-=+*#%@',
+      keyColor: '#00d414',
+      keyThreshold: 0.06,
+      keySoftness: 0.10,
+      foregroundCutoff: 0.08,
+      backgroundMode: 'black',
+      greenDominance: 0.05,
+      spillSuppression: 0.35,
+      backgroundOpacity: 1.0,
+      showMatte: false,
+      glitchFrequency: 0.0,
+      noise: 0.0,
+      tintStrength: 0.45,
+      contrast: 1.7,
+      edgeGain: 0.8,
+      localContrastStrength: 0.9,
+      creaseStrength: 0.65,
+      subjectBoost: 0.8,
+      duration: 3.166667,
+      tintColor: '#e8e5f7',
+      background: '#000000',
+      backgroundColor: '#000000',
+      reverseLoop: false,
+    };
+
+    const params = { ...DEFAULTS };
+
+    const BAYER8 = [
+      0, 32, 8, 40, 2, 34, 10, 42,
+      48, 16, 56, 24, 50, 18, 58, 26,
+      12, 44, 4, 36, 14, 46, 6, 38,
+      60, 28, 52, 20, 62, 30, 54, 22,
+      3, 35, 11, 43, 1, 33, 9, 41,
+      51, 19, 59, 27, 49, 17, 57, 25,
+      15, 47, 7, 39, 13, 45, 5, 37,
+      63, 31, 55, 23, 61, 29, 53, 21,
+    ];
+
+    const stage = document.getElementById('stage');
+    const card = document.getElementById('card');
+    const fpsEl = document.getElementById('fps');
+    const clickEl = document.getElementById('clickstart');
+    const scanEl = document.getElementById('scanlines');
+    const panelEl = document.getElementById('panel');
+    const fileInput = document.getElementById('fileInput');
+
+    let renderer, scene, camera, mesh, material;
+    let video, videoTexture, glyphTex, bayerTex, uniforms;
+    let videoAspect = 0;
+    let showFPS = false;
+    let showMatte = false;
+    let vignetteOn = false;
+    let playbackDirection = 1;
+    let lastAnimationAt = performance.now();
+    let frames = 0;
+    let lastFpsAt = performance.now();
+    let objectUrl = null;
+
+    function evaluateBezier(t, p1, p2) {
+      let s = Math.max(0, Math.min(1, t));
+      for (let i = 0; i < 6; i++) {
+        const o = 1 - s;
+        const x = 3 * o * o * s * p1[0] + 3 * o * s * s * p2[0] + s * s * s;
+        const d = 3 * ((1 - s) * (1 - 3 * s) * p1[0] + s * (2 - 3 * s) * p2[0]) + 3 * s * s;
+        s = Math.max(0, Math.min(1, s - (x - t) / Math.max(d, 0.0001)));
+        if (Math.abs(x - t) < 0.0002) break;
+      }
+      const o = 1 - s;
+      return 3 * o * o * s * p1[1] + 3 * o * s * s * p2[1] + s * s * s;
+    }
+
+    function hexToRgb01(hex) {
+      const m = String(hex).replace('#', '');
+      const n = parseInt(m, 16);
+      return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+    }
+
+    function rgbToHex(r, g, b) {
+      const c = (v) => Math.max(0, Math.min(255, Math.round(v * 255))).toString(16).padStart(2, '0');
+      return '#' + c(r) + c(g) + c(b);
+    }
+
+    function rgbToChroma(r, g, b) {
+      const cb = -0.168736 * r - 0.331264 * g + 0.5 * b + 0.5;
+      const cr = 0.5 * r - 0.418688 * g - 0.081312 * b + 0.5;
+      return [cb, cr];
+    }
+
+    function buildBayerTexture() {
+      const data = new Float32Array(BAYER8.map((v) => v / 64));
+      const tex = new THREE.DataTexture(data, 8, 8, THREE.RedFormat, THREE.FloatType);
+      tex.minFilter = THREE.NearestFilter;
+      tex.magFilter = THREE.NearestFilter;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.generateMipmaps = false;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function buildGlyphAtlas(ramp, cellW) {
+      const w = cellW || 64;
+      const cellH = w * 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = w * ramp.length;
+      canvas.height = cellH;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = '600 ' + Math.max(8, Math.round(w * 1.50)) + 'px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#e8e5f7';
+      for (let i = 0; i < ramp.length; i++) {
+        const ch = ramp[i];
+        if (ch === ' ' || ch === '') continue;
+        ctx.fillText(ch, i * w + w / 2, cellH / 2);
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = false;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    let atlasCellW = 0;
+
+    function atlasCellTarget() {
+      const bufferW = renderer && renderer.domElement ? renderer.domElement.width : 980;
+      const screenCell = bufferW / Math.max(8, params.cols);
+      return Math.max(16, Math.min(72, Math.round(screenCell * 3)));
+    }
+
+    function ensureAtlas() {
+      if (!uniforms) return;
+      const target = atlasCellTarget();
+      if (target === atlasCellW) return;
+      atlasCellW = target;
+      const old = glyphTex;
+      glyphTex = buildGlyphAtlas(params.glyphRamp, target);
+      uniforms.uGlyph.value = glyphTex;
+      if (old) old.dispose();
+    }
+
+    function updateGrid() {
+      const aspect = videoAspect || 16 / 9;
+      const cols = Math.max(8, params.cols | 0);
+      const rows = params.rows > 0
+        ? params.rows
+        : Math.max(8, Math.round((cols * 0.5) / aspect));
+      uniforms.uGrid.value.set(cols, rows);
+      return { cols, rows };
+    }
+
+    function setKeyColor(hex) {
+      const [r, g, b] = hexToRgb01(hex);
+      uniforms.uKeyChroma.value.set(rgbToChroma(r, g, b)[0], rgbToChroma(r, g, b)[1]);
+    }
+
+    function applyColors() {
+      const tint = hexToRgb01(params.tintColor);
+      const bgHex = params.backgroundColor || params.background;
+      params.background = bgHex;
+      const bg = hexToRgb01(bgHex);
+      uniforms.uTintColor.value.set(tint[0], tint[1], tint[2]);
+      uniforms.uBg.value.set(bg[0], bg[1], bg[2]);
+      renderer.setClearColor(new THREE.Color().setRGB(bg[0], bg[1], bg[2], THREE.LinearSRGBColorSpace), 1);
+    }
+
+    function bgModeIndex(mode) {
+      return mode === 'colorkey' ? 1 : mode === 'black' ? 2 : mode === 'white' ? 3 : mode === 'off' ? 4 : 0;
+    }
+
+    function updateDebug() {
+      const dbg = document.getElementById('dbg');
+      if (!dbg) return;
+      const durationText = Number.isFinite(params.duration) ? params.duration.toFixed(3) + 's' : '—';
+      dbg.textContent = 'MODE  ' + params.backgroundMode + '  ·  SOURCE DURATION  ' + durationText + '\nKEY   ' + params.keyColor + '  THRESH ' + params.keyThreshold.toFixed(3) + '  SOFT ' + params.keySoftness.toFixed(3) + '\nGREEN ' + params.greenDominance.toFixed(3) + '  SPILL ' + params.spillSuppression.toFixed(2) + (showMatte ? '\nMATTE  ON' : '');
+    }
+
+    function sampleBackgroundFromVideo() {
+      if (!video || video.readyState < 2 || !video.videoWidth) return;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 4; canvas.height = 1;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        ctx.drawImage(video, 0, 0, 2, 2, 0, 0, 1, 1);
+        ctx.drawImage(video, w - 2, 0, 2, 2, 1, 0, 1, 1);
+        ctx.drawImage(video, 0, h - 2, 2, 2, 2, 0, 1, 1);
+        ctx.drawImage(video, w - 2, h - 2, 2, 2, 3, 0, 1, 1);
+        const pixels = ctx.getImageData(0, 0, 4, 1).data;
+        let r = 0, g = 0, b = 0;
+        for (let i = 0; i < pixels.length; i += 4) { r += pixels[i]; g += pixels[i + 1]; b += pixels[i + 2]; }
+        const hex = rgbToHex(r / (255 * 4), g / (255 * 4), b / (255 * 4));
+        params.keyColor = hex;
+        document.getElementById('ctrlKey').value = hex;
+        setKeyColor(hex);
+        params.backgroundMode = 'colorkey';
+        document.getElementById('ctrlBgMode').value = 'colorkey';
+        uniforms.uBgMode.value = 1;
+        updateDebug();
+      } catch (error) {}
+    }
+
+    function resize() {
+      if (!renderer) return;
+      const availW = Math.min(window.innerWidth - 32, 980);
+      const availH = Math.max(240, window.innerHeight - 128);
+      const aspect = videoAspect || 16 / 9;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.0);
+      let w = Math.floor(availW);
+      let h = Math.floor(w / aspect);
+      if (Math.ceil(h * dpr) > 4096) {
+        h = Math.floor(4096 / dpr);
+        w = Math.floor(h * aspect);
+      }
+      if (h > availH) {
+        h = Math.floor(availH);
+        w = Math.floor(h * aspect);
+      }
+      renderer.setSize(w, h, true);
+      renderer.setPixelRatio(dpr);
+      ensureAtlas();
+    }
+
+    function showClickStart(msg) {
+      clickEl.textContent = msg || '▶ CLICK TO START';
+      clickEl.hidden = false;
+    }
+
+    function hideClickStart() {
+      clickEl.hidden = true;
+    }
+
+    function loadVideoSource(src) {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = src instanceof Blob || src instanceof File ? URL.createObjectURL(src) : null;
+      showClickStart('LOADING…');
+      playbackDirection = 1;
+      lastAnimationAt = performance.now();
+      video.src = objectUrl || src;
+      video.load();
+      const play = video.play();
+      if (play && play.catch) play.catch(() => showClickStart('TAP TO PLAY'));
+    }
+
+    function init(opts = {}) {
+      Object.assign(params, opts);
+
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
+      renderer.setClearColor(0x000000, 1);
+      stage.insertBefore(renderer.domElement, stage.firstChild);
+
+      scene = new THREE.Scene();
+      camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+      bayerTex = buildBayerTexture();
+      glyphTex = buildGlyphAtlas(params.glyphRamp);
+
+      video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+      video.loop = !params.reverseLoop;
+      video.preload = 'auto';
+      video.crossOrigin = 'anonymous';
+
+      videoTexture = new THREE.VideoTexture(video);
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.generateMipmaps = false;
+
+      uniforms = {
+        uVideo: { value: videoTexture },
+        uGlyph: { value: glyphTex },
+        uBayer: { value: bayerTex },
+        uGrid: { value: new THREE.Vector2(params.cols, 68) },
+        uGlyphCount: { value: params.glyphRamp.length },
+        uKeyChroma: { value: new THREE.Vector2(0.253, 0.146) },
+        uKeyThreshold: { value: params.keyThreshold },
+        uKeySoftness: { value: params.keySoftness },
+        uForegroundCutoff: { value: params.foregroundCutoff },
+        uBgMode: { value: bgModeIndex(params.backgroundMode) },
+        uGreenDominance: { value: params.greenDominance },
+        uSpill: { value: params.spillSuppression },
+        uBgOpacity: { value: params.backgroundOpacity },
+        uShowMatte: { value: 0 },
+        uTintStrength: { value: params.tintStrength },
+        uGlitchFrequency: { value: params.glitchFrequency },
+        uFlicker: { value: params.noise },
+        uBayerSize: { value: params.bayerSize },
+        uTime: { value: 0 },
+        uTintColor: { value: new THREE.Vector3().fromArray(hexToRgb01(params.tintColor)) },
+        uBg: { value: new THREE.Vector3().fromArray(hexToRgb01(params.background)) },
+        uContrast: { value: params.contrast },
+        uEdgeGain: { value: params.edgeGain },
+        uLocalContrast: { value: params.localContrastStrength },
+        uCrease: { value: params.creaseStrength },
+        uSubjectBoost: { value: params.subjectBoost },
+      };
+
+      material = new THREE.RawShaderMaterial({
+        vertexShader: [
+          'precision highp float;',
+          'attribute vec3 position;',
+          'attribute vec2 uv;',
+          'varying vec2 vUv;',
+          'void main() {',
+          '  vUv = uv;',
+          '  gl_Position = vec4(position, 1.0);',
+          '}',
+        ].join('\n'),
+        fragmentShader: [
+          'precision highp float;',
+          'uniform sampler2D uVideo;',
+          'uniform sampler2D uGlyph;',
+          'uniform sampler2D uBayer;',
+          'uniform vec2 uGrid;',
+          'uniform float uGlyphCount;',
+          'uniform vec2 uKeyChroma;',
+          'uniform float uKeyThreshold;',
+          'uniform float uKeySoftness;',
+          'uniform float uForegroundCutoff;',
+          'uniform float uBgMode;',
+          'uniform float uGreenDominance;',
+          'uniform float uSpill;',
+          'uniform float uBgOpacity;',
+          'uniform float uShowMatte;',
+          'uniform float uTintStrength;',
+          'uniform float uGlitchFrequency;',
+          'uniform float uFlicker;',
+          'uniform float uBayerSize;',
+          'uniform float uTime;',
+          'uniform vec3 uTintColor;',
+          'uniform vec3 uBg;',
+          'uniform float uContrast;',
+          'uniform float uEdgeGain;',
+          'uniform float uLocalContrast;',
+          'uniform float uCrease;',
+          'uniform float uSubjectBoost;',
+          'varying vec2 vUv;',
+          'float hash2(vec2 p) {',
+          '  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);',
+          '}',
+          'float luma(vec3 v) { return dot(v, vec3(0.2126, 0.7152, 0.0722)); }',
+          'vec2 keyedRGB(vec3 v, float localEdge) {',
+          '  float cb = dot(v, vec3(-0.168736, -0.331264, 0.5)) + 0.5;',
+          '  float cr = dot(v, vec3(0.5, -0.418688, -0.081312)) + 0.5;',
+          '  float cd = distance(vec2(cb, cr), uKeyChroma);',
+          '  float k = 0.0;',
+          '  vec3 sp = v;',
+          '  if (uBgMode < 0.5) {',
+          '    float kc = 1.0 - smoothstep(uKeyThreshold, uKeyThreshold + uKeySoftness, cd);',
+          '    float dom = v.g - max(v.r, v.b);',
+          '    float kd = smoothstep(uGreenDominance - uKeySoftness, uGreenDominance + uKeySoftness, dom);',
+          '    k = kc * kd;',
+          '    sp = mix(v, vec3(v.r, 0.5 * (v.r + v.b), v.b), clamp(k + 0.5 * clamp(dom, 0.0, 1.0), 0.0, 1.0) * uSpill);',
+          '  } else if (uBgMode < 1.5) {',
+          '    k = 1.0 - smoothstep(uKeyThreshold, uKeyThreshold + uKeySoftness, cd);',
+          '    sp = mix(v, vec3(luma(v)), clamp(k * 1.5, 0.0, 1.0) * uSpill);',
+          '  } else if (uBgMode < 2.5) {',
+          '    float l = luma(v);',
+          '    k = 1.0 - smoothstep(uKeyThreshold, uKeyThreshold + uKeySoftness, l);',
+          '    k *= mix(1.0, 0.3, clamp(localEdge * 4.0, 0.0, 1.0));',
+          '    sp = mix(v, vec3(l * 0.6), k * uSpill);',
+          '  } else if (uBgMode < 3.5) {',
+          '    float l = luma(v);',
+          '    float saturation = max(v.r, max(v.g, v.b)) - min(v.r, min(v.g, v.b));',
+          '    float brightBackground = smoothstep(0.58, 0.94, l);',
+          '    float lowSaturation = 1.0 - smoothstep(0.04, 0.28, saturation);',
+          '    k = brightBackground * lowSaturation;',
+          '    k = max(k, smoothstep(0.72, 0.98, l) * lowSaturation);',
+          '    sp = mix(v, vec3(l), k * uSpill);',
+          '  }',
+          '  return vec2(luma(sp), 1.0 - k);',
+          '}',
+          'vec3 sampleVideo(vec2 uv) {',
+          '  return texture2D(uVideo, clamp(uv, 0.001, 0.999)).rgb;',
+          '} ',
+          'void main() {',
+          '  float frame = floor(uTime * 30.0);',
+          '  float roll = hash2(vec2(frame, 11.0));',
+          '  float glitchOn = step(1.0 - uGlitchFrequency, roll);',
+          '  float bandRow = floor(hash2(vec2(frame, 23.0)) * uGrid.y);',
+          '  float offsetCells = (hash2(vec2(frame, 37.0)) * 2.0 - 1.0) * 5.0;',
+          '  vec2 cell = floor(vUv * uGrid);',
+          '  float inBand = step(abs(cell.y - bandRow), 1.5);',
+          '  vec2 cellG = cell + vec2(inBand * glitchOn * offsetCells, 0.0);',
+          '  if (uShowMatte > 0.5) {',
+          '    gl_FragColor = vec4(vec3(keyedRGB(sampleVideo(vUv), 0.0).y), 1.0);',
+          '    return;',
+          '  }',
+          '  vec3 c = sampleVideo((cellG + vec2(0.5, 0.5)) / uGrid);',
+          '  float localEdge = 0.0;',
+          '  float localVariation = 0.0;',
+          '  if (uBgMode > 1.5 && uBgMode < 2.5) {',
+          '    float lc = luma(c);',
+          '    float lumL0 = luma(sampleVideo((cellG + vec2(-0.5, 0.5)) / uGrid));',
+          '    float lumR0 = luma(sampleVideo((cellG + vec2(1.5, 0.5)) / uGrid));',
+          '    float lumD0 = luma(sampleVideo((cellG + vec2(0.5, -0.5)) / uGrid));',
+          '    float lumU0 = luma(sampleVideo((cellG + vec2(0.5, 1.5)) / uGrid));',
+          '    float neighborMean0 = 0.25 * (lumL0 + lumR0 + lumD0 + lumU0);',
+          '    localVariation = abs(lc - neighborMean0);',
+          '    localEdge = abs(lumR0 - lumL0) + abs(lumU0 - lumD0);',
+          '  }',
+          '  vec2 g0 = keyedRGB(c, localEdge);',
+          '  float lum = g0.x;',
+          '  float fgAlpha = g0.y;',
+          '  if (uBgMode > 1.5 && uBgMode < 2.5) {',
+          '    float centerLum = luma(c);',
+          '    float darkRegion = 1.0 - smoothstep(0.035, 0.18, centerLum);',
+          '    float flatBlack = 1.0 - smoothstep(0.025, 0.14, localVariation);',
+          '    float structureStrength = clamp(localEdge * 1.7 + localVariation * 2.0, 0.0, 1.0);',
+          '    float structureAlpha = max(1.0 - darkRegion * flatBlack, structureStrength * 0.85);',
+          '    fgAlpha = max(fgAlpha, structureAlpha);',
+          '  }',
+          '  float pixelAlpha = keyedRGB(sampleVideo(vUv), 0.0).y;',
+          '  bool pixelGateRequired = !(uBgMode > 1.5 && uBgMode < 2.5);',
+          '  if (fgAlpha < uForegroundCutoff || (pixelGateRequired && pixelAlpha < uForegroundCutoff)) {',
+          '    gl_FragColor = vec4(uBg, 1.0);',
+          '    return;',
+          '  }',
+          '  float edge = 0.0;',
+          '  float localContrast = 0.0;',
+          '  if (uEdgeGain > 0.0001 || uLocalContrast > 0.0001 || uCrease > 0.0001 || uSubjectBoost > 0.0001) {',
+          '    vec3 cL = sampleVideo((cellG + vec2(-0.5, 0.5)) / uGrid);',
+          '    vec3 cR = sampleVideo((cellG + vec2(1.5, 0.5)) / uGrid);',
+          '    vec3 cD = sampleVideo((cellG + vec2(0.5, -0.5)) / uGrid);',
+          '    vec3 cU = sampleVideo((cellG + vec2(0.5, 1.5)) / uGrid);',
+          '    vec2 gL = keyedRGB(cL, 0.0);',
+          '    vec2 gR = keyedRGB(cR, 0.0);',
+          '    vec2 gD = keyedRGB(cD, 0.0);',
+          '    vec2 gU = keyedRGB(cU, 0.0);',
+          '    float localMean = 0.25 * (gL.x + gR.x + gD.x + gU.x);',
+          '    localContrast = lum - localMean;',
+          '    float edgeRaw = abs(gR.x - gL.x) + abs(gU.x - gD.x) + 0.6 * (abs(gR.y - gL.y) + abs(gU.y - gD.y));',
+          '    edge = clamp(edgeRaw * uEdgeGain, 0.0, 1.0);',
+          '  }',
+          '  float n = hash2(vUv * uGrid * 0.71 + vec2(uTime * 1.31, uTime * 2.17));',
+          '  float tone = clamp((lum - 0.5) * uContrast + 0.5, 0.0, 1.0);',
+          '  float darkCrease = (1.0 - smoothstep(0.10, 0.42, lum)) * smoothstep(0.08, 0.42, edge);',
+          '  float importance = clamp(fgAlpha * (0.65 + edge * 0.35), 0.0, 1.0);',
+          '  tone += localContrast * uLocalContrast;',
+          '  tone += edge * 0.55;',
+          '  tone += edge * uSubjectBoost * importance;',
+          '  tone -= darkCrease * uCrease;',
+          '  tone = clamp(0.07 * fgAlpha + tone * 0.80 + (n - 0.5) * uFlicker, 0.0, 1.0);',
+          '  float q = tone * (uGlyphCount - 1.0);',
+          '  float lower = floor(q);',
+          '  float frac = q - lower;',
+          '  vec2 bcoord = mod(cell, uBayerSize);',
+          '  float bayerVal = texture2D(uBayer, (bcoord + 0.5) / 8.0).r;',
+          '  float idx = clamp(lower + step(bayerVal, frac), 0.0, uGlyphCount - 1.0);',
+          '  vec2 cellUV = fract(vUv * uGrid);',
+          '  vec2 glyphUV = vec2((cellUV.x + idx) / uGlyphCount, cellUV.y);',
+          '  float glyphAlpha = texture2D(uGlyph, glyphUV).a;',
+          '  vec3 sourceTint = mix(vec3(lum), c, uTintStrength);',
+          '  vec3 tint = mix(sourceTint, uTintColor, 0.72);',
+          '  tint *= 0.85;',
+          '  float coverage = clamp(fgAlpha * glyphAlpha, 0.0, 1.0);',
+          '  coverage = clamp((coverage - 0.04) / 0.96, 0.0, 1.0);',
+          '  vec3 bgCol = uBg * uBgOpacity;',
+          '  gl_FragColor = vec4(mix(bgCol, tint, coverage), 1.0);',
+          '}',
+        ].join('\n'),
+        uniforms,
+        depthTest: false,
+        depthWrite: false,
+      });
+
+      mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+      mesh.frustumCulled = false;
+      scene.add(mesh);
+
+      setKeyColor(params.keyColor);
+      applyColors();
+      updateDebug();
+      updateGrid();
+      resize();
+
+      video.addEventListener('loadedmetadata', () => {
+        videoAspect = video.videoWidth / video.videoHeight;
+        video.playbackRate = 1.0;
+        playbackDirection = 1;
+        video.loop = !params.reverseLoop;
+        params.duration = video.duration;
+        updateDebug();
+        updateGrid();
+        if (video.paused) { const play = video.play(); if (play && play.catch) play.catch(() => showClickStart('TAP TO PLAY')); }
+        resize();
+      });
+      video.addEventListener('ended', () => {
+        if (!params.reverseLoop || playbackDirection !== 1 || !video.duration) return;
+        playbackDirection = -1;
+        video.pause();
+        video.currentTime = Math.max(0, video.duration - (1 / 60));
+        lastAnimationAt = performance.now();
+      });
+      video.addEventListener('playing', hideClickStart);
+      video.addEventListener('error', () => showClickStart('VIDEO NOT FOUND — CLICK TO LOAD'));
+
+      loadVideoSource(params.videoUrl);
+
+      window.addEventListener('resize', resize);
+
+      let raf;
+      const animate = () => {
+        raf = requestAnimationFrame(animate);
+        const now = performance.now();
+        const delta = Math.min(0.05, Math.max(0, (now - lastAnimationAt) / 1000));
+        lastAnimationAt = now;
+        if (playbackDirection === -1 && video.readyState >= 2 && video.duration > 0) {
+          const nextTime = video.currentTime - delta * video.playbackRate;
+          if (nextTime <= 0.001) {
+            video.currentTime = 0;
+            playbackDirection = 1;
+            lastAnimationAt = now;
+            const play = video.play();
+            if (play && play.catch) play.catch(() => {});
+          } else {
+            video.currentTime = nextTime;
+          }
+        }
+        uniforms.uTime.value = video.currentTime || 0;
+        frames++;
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      setInterval(() => {
+        const now = performance.now();
+        const fps = (frames * 1000) / (now - lastFpsAt);
+        lastFpsAt = now;
+        frames = 0;
+        if (showFPS) fpsEl.textContent = Math.round(fps) + ' FPS';
+      }, 500);
+
+      document.getElementById('fpsBtn').addEventListener('click', () => {
+        showFPS = !showFPS;
+        fpsEl.hidden = !showFPS;
+        document.getElementById('fpsBtn').classList.toggle('active', showFPS);
+      });
+
+      document.getElementById('tuneBtn').addEventListener('click', () => {
+        panelEl.hidden = !panelEl.hidden;
+        document.getElementById('tuneBtn').classList.toggle('active', !panelEl.hidden);
+      });
+
+      const ctrlCols = document.getElementById('ctrlCols');
+      const outCols = document.getElementById('outCols');
+      ctrlCols.addEventListener('input', () => {
+        params.cols = parseInt(ctrlCols.value, 10);
+        outCols.textContent = ctrlCols.value;
+        updateGrid();
+        ensureAtlas();
+      });
+
+      const ctrlBayer = document.getElementById('ctrlBayer');
+      ctrlBayer.addEventListener('change', () => {
+        params.bayerSize = parseInt(ctrlBayer.value, 10);
+        uniforms.uBayerSize.value = params.bayerSize;
+      });
+
+      const ctrlKey = document.getElementById('ctrlKey');
+      ctrlKey.addEventListener('input', () => {
+        params.keyColor = ctrlKey.value;
+        setKeyColor(ctrlKey.value);
+        updateDebug();
+      });
+
+      const ctrlBgMode = document.getElementById('ctrlBgMode');
+      ctrlBgMode.addEventListener('change', () => {
+        params.backgroundMode = ctrlBgMode.value;
+        uniforms.uBgMode.value = bgModeIndex(params.backgroundMode);
+        updateDebug();
+      });
+
+      const ctrlThresh = document.getElementById('ctrlThresh');
+      const outThresh = document.getElementById('outThresh');
+      ctrlThresh.addEventListener('input', () => {
+        params.keyThreshold = parseFloat(ctrlThresh.value);
+        outThresh.textContent = ctrlThresh.value;
+        uniforms.uKeyThreshold.value = params.keyThreshold;
+        updateDebug();
+      });
+
+      const ctrlSoft = document.getElementById('ctrlSoft');
+      const outSoft = document.getElementById('outSoft');
+      ctrlSoft.addEventListener('input', () => {
+        params.keySoftness = parseFloat(ctrlSoft.value);
+        outSoft.textContent = ctrlSoft.value;
+        uniforms.uKeySoftness.value = params.keySoftness;
+        updateDebug();
+      });
+
+      const ctrlCutoff = document.getElementById('ctrlCutoff');
+      const outCutoff = document.getElementById('outCutoff');
+      ctrlCutoff.addEventListener('input', () => {
+        params.foregroundCutoff = parseFloat(ctrlCutoff.value);
+        outCutoff.textContent = ctrlCutoff.value;
+        uniforms.uForegroundCutoff.value = params.foregroundCutoff;
+      });
+
+      const ctrlGreen = document.getElementById('ctrlGreen');
+      const outGreen = document.getElementById('outGreen');
+      ctrlGreen.addEventListener('input', () => {
+        params.greenDominance = parseFloat(ctrlGreen.value);
+        outGreen.textContent = ctrlGreen.value;
+        uniforms.uGreenDominance.value = params.greenDominance;
+        updateDebug();
+      });
+
+      const ctrlSpill = document.getElementById('ctrlSpill');
+      const outSpill = document.getElementById('outSpill');
+      ctrlSpill.addEventListener('input', () => {
+        params.spillSuppression = parseFloat(ctrlSpill.value);
+        outSpill.textContent = ctrlSpill.value;
+        uniforms.uSpill.value = params.spillSuppression;
+        updateDebug();
+      });
+
+      const ctrlBgOpacity = document.getElementById('ctrlBgOpacity');
+      const outBgOpacity = document.getElementById('outBgOpacity');
+      ctrlBgOpacity.addEventListener('input', () => {
+        params.backgroundOpacity = parseFloat(ctrlBgOpacity.value);
+        outBgOpacity.textContent = params.backgroundOpacity.toFixed(2);
+        uniforms.uBgOpacity.value = params.backgroundOpacity;
+      });
+
+      const ctrlNoise = document.getElementById('ctrlNoise');
+      const outNoise = document.getElementById('outNoise');
+      ctrlNoise.addEventListener('input', () => {
+        params.noise = parseFloat(ctrlNoise.value);
+        outNoise.textContent = ctrlNoise.value;
+        uniforms.uFlicker.value = params.noise;
+      });
+
+      const ctrlTintColor = document.getElementById('ctrlTintColor');
+      ctrlTintColor.addEventListener('input', () => {
+        params.tintColor = ctrlTintColor.value;
+        applyColors();
+      });
+
+      const ctrlBg = document.getElementById('ctrlBg');
+      ctrlBg.addEventListener('input', () => {
+        params.background = ctrlBg.value;
+        params.backgroundColor = ctrlBg.value;
+        applyColors();
+      });
+
+      const ctrlContrast = document.getElementById('ctrlContrast');
+      const outContrast = document.getElementById('outContrast');
+      ctrlContrast.addEventListener('input', () => {
+        params.contrast = parseFloat(ctrlContrast.value);
+        outContrast.textContent = ctrlContrast.value;
+        uniforms.uContrast.value = params.contrast;
+      });
+
+      const ctrlEdge = document.getElementById('ctrlEdge');
+      const outEdge = document.getElementById('outEdge');
+      ctrlEdge.addEventListener('input', () => {
+        params.edgeGain = parseFloat(ctrlEdge.value);
+        outEdge.textContent = params.edgeGain.toFixed(2);
+        uniforms.uEdgeGain.value = params.edgeGain;
+      });
+
+      const ctrlLocal = document.getElementById('ctrlLocal');
+      const outLocal = document.getElementById('outLocal');
+      ctrlLocal.addEventListener('input', () => {
+        params.localContrastStrength = parseFloat(ctrlLocal.value);
+        outLocal.textContent = params.localContrastStrength.toFixed(2);
+        uniforms.uLocalContrast.value = params.localContrastStrength;
+      });
+
+      const ctrlCrease = document.getElementById('ctrlCrease');
+      const outCrease = document.getElementById('outCrease');
+      ctrlCrease.addEventListener('input', () => {
+        params.creaseStrength = parseFloat(ctrlCrease.value);
+        outCrease.textContent = params.creaseStrength.toFixed(2);
+        uniforms.uCrease.value = params.creaseStrength;
+      });
+
+      const ctrlSubject = document.getElementById('ctrlSubject');
+      const outSubject = document.getElementById('outSubject');
+      ctrlSubject.addEventListener('input', () => {
+        params.subjectBoost = parseFloat(ctrlSubject.value);
+        outSubject.textContent = params.subjectBoost.toFixed(2);
+        uniforms.uSubjectBoost.value = params.subjectBoost;
+      });
+
+      const ctrlTint = document.getElementById('ctrlTint');
+      const outTint = document.getElementById('outTint');
+      ctrlTint.addEventListener('input', () => {
+        params.tintStrength = parseFloat(ctrlTint.value);
+        outTint.textContent = ctrlTint.value;
+        uniforms.uTintStrength.value = params.tintStrength;
+      });
+
+      const ctrlGlitch = document.getElementById('ctrlGlitch');
+      const outGlitch = document.getElementById('outGlitch');
+      ctrlGlitch.addEventListener('input', () => {
+        params.glitchFrequency = parseFloat(ctrlGlitch.value);
+        outGlitch.textContent = ctrlGlitch.value;
+        uniforms.uGlitchFrequency.value = params.glitchFrequency;
+      });
+
+      const ctrlRamp = document.getElementById('ctrlRamp');
+      ctrlRamp.addEventListener('change', () => {
+        const ramp = ctrlRamp.value.length ? ctrlRamp.value : ' ';
+        params.glyphRamp = ramp;
+        const old = glyphTex;
+        glyphTex = buildGlyphAtlas(ramp, atlasCellW || 64);
+        uniforms.uGlyph.value = glyphTex;
+        uniforms.uGlyphCount.value = ramp.length;
+        if (old) old.dispose();
+      });
+
+      document.getElementById('restartBtn').addEventListener('click', () => {
+        playbackDirection = 1;
+        video.currentTime = 0;
+        video.play();
+      });
+
+      const reverseBtn = document.getElementById('reverseBtn');
+      reverseBtn.addEventListener('click', () => {
+        params.reverseLoop = !params.reverseLoop;
+        playbackDirection = 1;
+        video.loop = !params.reverseLoop;
+        reverseBtn.classList.toggle('active', params.reverseLoop);
+        if (!params.reverseLoop) {
+          const play = video.play();
+          if (play && play.catch) play.catch(() => {});
+        }
+      });
+
+
+      document.getElementById('scanBtn').addEventListener('click', () => {
+        const enabled = scanEl.hidden;
+        scanEl.hidden = !enabled;
+        document.getElementById('scanBtn').classList.toggle('active', enabled);
+      });
+
+      document.getElementById('vignetteBtn').addEventListener('click', () => {
+        vignetteOn = !vignetteOn;
+        document.getElementById('vignette').hidden = !vignetteOn;
+        document.getElementById('vignetteBtn').classList.toggle('active', vignetteOn);
+      });
+
+      document.getElementById('matteBtn').addEventListener('click', () => {
+        showMatte = !showMatte;
+        uniforms.uShowMatte.value = showMatte ? 1 : 0;
+        document.getElementById('matteBtn').classList.toggle('active', showMatte);
+        updateDebug();
+      });
+
+      document.getElementById('sampleKeyBtn').addEventListener('click', sampleBackgroundFromVideo);
+
+      document.getElementById('loadBtn').addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        const f = fileInput.files && fileInput.files[0];
+        if (f) loadVideoSource(f);
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        Object.assign(params, DEFAULTS);
+        playbackDirection = 1;
+        video.loop = !params.reverseLoop;
+        reverseBtn.classList.toggle('active', params.reverseLoop);
+        ctrlCols.value = params.cols; outCols.textContent = params.cols;
+        ctrlBayer.value = String(params.bayerSize);
+        ctrlThresh.value = params.keyThreshold; outThresh.textContent = params.keyThreshold;
+        ctrlSoft.value = params.keySoftness; outSoft.textContent = params.keySoftness;
+        ctrlCutoff.value = params.foregroundCutoff; outCutoff.textContent = params.foregroundCutoff.toFixed(2);
+        ctrlBgMode.value = params.backgroundMode;
+        ctrlGreen.value = params.greenDominance; outGreen.textContent = params.greenDominance.toFixed(3);
+        ctrlSpill.value = params.spillSuppression; outSpill.textContent = params.spillSuppression.toFixed(2);
+        ctrlBgOpacity.value = params.backgroundOpacity; outBgOpacity.textContent = params.backgroundOpacity.toFixed(2);
+        ctrlTint.value = params.tintStrength; outTint.textContent = params.tintStrength;
+        ctrlGlitch.value = params.glitchFrequency; outGlitch.textContent = params.glitchFrequency;
+        ctrlNoise.value = params.noise; outNoise.textContent = params.noise;
+        ctrlContrast.value = params.contrast; outContrast.textContent = params.contrast;
+        ctrlEdge.value = params.edgeGain; outEdge.textContent = params.edgeGain.toFixed(2);
+        ctrlLocal.value = params.localContrastStrength; outLocal.textContent = params.localContrastStrength.toFixed(2);
+        ctrlCrease.value = params.creaseStrength; outCrease.textContent = params.creaseStrength.toFixed(2);
+        ctrlSubject.value = params.subjectBoost; outSubject.textContent = params.subjectBoost.toFixed(2);
+        ctrlKey.value = params.keyColor;
+        ctrlTintColor.value = params.tintColor;
+        ctrlBg.value = params.background;
+        ctrlRamp.value = params.glyphRamp;
+        setKeyColor(params.keyColor);
+        applyColors();
+        uniforms.uKeyThreshold.value = params.keyThreshold;
+        uniforms.uKeySoftness.value = params.keySoftness;
+        uniforms.uForegroundCutoff.value = params.foregroundCutoff;
+        uniforms.uBgMode.value = bgModeIndex(params.backgroundMode);
+        uniforms.uGreenDominance.value = params.greenDominance;
+        uniforms.uSpill.value = params.spillSuppression;
+        uniforms.uBgOpacity.value = params.backgroundOpacity;
+        showMatte = params.showMatte;
+        uniforms.uShowMatte.value = showMatte ? 1 : 0;
+        document.getElementById('matteBtn').classList.toggle('active', showMatte);
+        updateDebug();
+        uniforms.uTintStrength.value = params.tintStrength;
+        uniforms.uGlitchFrequency.value = params.glitchFrequency;
+        uniforms.uFlicker.value = params.noise;
+        uniforms.uContrast.value = params.contrast;
+        uniforms.uEdgeGain.value = params.edgeGain;
+        uniforms.uLocalContrast.value = params.localContrastStrength;
+        uniforms.uCrease.value = params.creaseStrength;
+        uniforms.uSubjectBoost.value = params.subjectBoost;
+        uniforms.uBayerSize.value = params.bayerSize;
+        uniforms.uGlyphCount.value = params.glyphRamp.length;
+        glyphTex.dispose();
+        glyphTex = buildGlyphAtlas(params.glyphRamp, atlasCellW || 64);
+        uniforms.uGlyph.value = glyphTex;
+        updateGrid();
+      });
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.panel') || e.target.closest('.ghost')) return;
+        if (video.paused) { const play = video.play(); if (play && play.catch) play.catch(() => {}); }
+      });
+
+      stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.style.outline = '2px dashed var(--accent)'; });
+      stage.addEventListener('dragleave', () => { stage.style.outline = ''; });
+      stage.addEventListener('drop', (e) => {
+        e.preventDefault();
+        stage.style.outline = '';
+        const f = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f && f.type.startsWith('video/')) loadVideoSource(f);
+      });
+
+      return {
+        params,
+        setParam(key, value) {
+          params[key] = value;
+          if (key === 'cols' || key === 'rows') { updateGrid(); ensureAtlas(); }
+          if (key === 'bayerSize') uniforms.uBayerSize.value = value;
+          if (key === 'keyColor') { setKeyColor(value); ctrlKey.value = value; }
+          if (key === 'keyThreshold') uniforms.uKeyThreshold.value = value;
+          if (key === 'keySoftness') uniforms.uKeySoftness.value = value;
+          if (key === 'foregroundCutoff') uniforms.uForegroundCutoff.value = value;
+          if (key === 'backgroundMode') { uniforms.uBgMode.value = bgModeIndex(value); ctrlBgMode.value = value; updateDebug(); }
+          if (key === 'greenDominance') uniforms.uGreenDominance.value = value;
+          if (key === 'spillSuppression') uniforms.uSpill.value = value;
+          if (key === 'backgroundOpacity') uniforms.uBgOpacity.value = value;
+          if (key === 'showMatte') { showMatte = !!value; uniforms.uShowMatte.value = showMatte ? 1 : 0; updateDebug(); }
+          if (key === 'reverseLoop') {
+            params.reverseLoop = !!value;
+            playbackDirection = 1;
+            video.loop = !params.reverseLoop;
+            reverseBtn.classList.toggle('active', params.reverseLoop);
+          }
+          if (key === 'tintStrength') uniforms.uTintStrength.value = value;
+          if (key === 'glitchFrequency') uniforms.uGlitchFrequency.value = value;
+          if (key === 'noise') uniforms.uFlicker.value = value;
+          if (key === 'tintColor') applyColors();
+          if (key === 'background' || key === 'backgroundColor') { params.background = value; params.backgroundColor = value; applyColors(); }
+          if (key === 'contrast') uniforms.uContrast.value = value;
+          if (key === 'edgeGain') uniforms.uEdgeGain.value = value;
+          if (key === 'localContrastStrength') uniforms.uLocalContrast.value = value;
+          if (key === 'creaseStrength') uniforms.uCrease.value = value;
+          if (key === 'subjectBoost') uniforms.uSubjectBoost.value = value;
+          if (key === 'glyphRamp') {
+            glyphTex.dispose();
+            glyphTex = buildGlyphAtlas(value, atlasCellW || 64);
+            uniforms.uGlyph.value = glyphTex;
+            uniforms.uGlyphCount.value = value.length;
+          }
+          return this;
+        },
+        setParams(obj) { for (const k in obj) this.setParam(k, obj[k]); return this; },
+        restart() { playbackDirection = 1; video.currentTime = 0; video.play(); return this; },
+        seek(progress) {
+          const c = Math.max(0, Math.min(1, progress));
+          video.currentTime = c * (video.duration || params.duration);
+          return this;
+        },
+        currentFrame() {
+          return { time: video.currentTime, duration: video.duration };
+        },
+        setVideo(fileOrUrl) { loadVideoSource(fileOrUrl); },
+        toggleFPS() { document.getElementById('fpsBtn').click(); },
+        toggleScanlines() { document.getElementById('scanBtn').click(); },
+        grid() { return updateGrid(); },
+        destroy() {
+          cancelAnimationFrame(raf);
+          window.removeEventListener('resize', resize);
+          renderer.dispose();
+          mesh.geometry.dispose();
+          material.dispose();
+          glyphTex.dispose();
+          bayerTex.dispose();
+          videoTexture.dispose();
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          renderer.domElement.remove();
+        },
+      };
+    }
+
+    const bloom = init();
+    window.BLOOM = { params, init, instance: bloom };
+  </script>
+</body>
+</html>
