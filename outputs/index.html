@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BLOOM.SEQ — ROSE 042</title>
+<title>BLOOM.SEQ - ROSE 042</title>
 <script type="importmap">
 {
   "imports": {
@@ -116,7 +116,44 @@
 
   .stage { position: relative; line-height: 0; }
 
-  .stage canvas { display: block; background: #000; }
+  .stage canvas { display: block; background: transparent; }
+
+  .source-preview {
+    display: none;
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    background: #000;
+    pointer-events: none;
+  }
+
+  .source-preview.visible { display: block; }
+
+  .source-preview-label {
+    display: none;
+    color: var(--ink-dim);
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    line-height: 1.2;
+  }
+
+  .source-preview video {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    background: #000;
+    filter: blur(8px) saturate(0.72) contrast(1.12);
+    opacity: 0.52;
+    transform: none;
+  }
+
+  .stage canvas { position: relative; z-index: 1; }
+
+  .panel { z-index: 10; }
 
   .overlay {
     position: absolute;
@@ -186,44 +223,112 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 248px;
+    width: min(300px, calc(100% - 24px));
     max-height: calc(100% - 24px);
     overflow: auto;
-    padding: 14px;
-    border-radius: 10px;
-    background: rgba(10, 10, 15, 0.82);
-    border: 1px solid var(--line-soft);
+    padding: 0 16px 16px;
+    border-radius: 14px;
+    background: rgba(8, 8, 12, 0.48);
+    border: 1px solid rgba(230, 228, 245, 0.18);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(8px);
     font-size: 11px;
     color: var(--ink);
     line-height: 1.4;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(230, 228, 245, 0.3) transparent;
   }
 
   .panel[hidden] { display: none; }
 
   .panel h2 {
-    margin: 0 0 12px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 -16px 12px;
+    padding: 13px 16px 11px;
+    background: rgba(8, 8, 12, 0.58);
+    border-bottom: 1px solid var(--line-soft);
     font-size: 11px;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.4px;
     color: var(--accent);
     font-weight: 600;
   }
 
+  .panel-close {
+    border: 0;
+    background: transparent;
+    color: var(--ink-dim);
+    font: inherit;
+    width: 26px;
+    height: 26px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 20px;
+    line-height: 20px;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .panel-close:hover,
+  .panel-close:focus-visible {
+    color: var(--ink);
+    border-color: var(--line-soft);
+    background: rgba(230, 228, 245, 0.06);
+  }
+
+  .panel-section-label {
+    margin: 18px 0 8px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(230, 228, 245, 0.1);
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+  }
+
+  .panel-section-label:first-of-type { margin-top: 12px; }
+
   .ctrl {
     display: grid;
-    grid-template-columns: 88px 1fr 42px;
+    grid-template-columns: 112px 1fr 44px;
     align-items: center;
     gap: 8px;
-    margin: 9px 0;
+    margin: 10px 0;
   }
 
   .ctrl label { color: var(--ink-dim); }
 
   .ctrl output { text-align: right; color: var(--ink); }
 
+  .ctrl output.value-input {
+    display: block;
+    min-width: 0;
+    padding: 2px 4px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    text-align: right;
+    cursor: text;
+  }
+
+  .ctrl output.value-input:hover,
+  .ctrl output.value-input:focus {
+    border-color: var(--line-soft);
+    background: rgba(230, 228, 245, 0.06);
+    outline: none;
+  }
+
+  .ctrl:focus-within label,
+  .ctrl:focus-within output { color: var(--ink); }
+
   input[type="range"] {
     width: 100%;
     accent-color: var(--accent);
+    cursor: ew-resize;
   }
 
   input[type="color"] {
@@ -255,6 +360,15 @@
     border-radius: 5px;
   }
 
+  .row select:focus-visible,
+  .row input[type="text"]:focus-visible,
+  input[type="color"]:focus-visible,
+  input[type="range"]:focus-visible,
+  .ghost:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   .row select { width: 100%; }
   .row select option { background: #0a0a0f; }
 
@@ -262,10 +376,23 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 14px;
+    margin-top: 18px;
   }
 
-  .btn-grid .ghost { padding: 7px 6px; }
+  .btn-grid .ghost { padding: 8px 6px; }
+
+  .btn-grid .ghost:active { transform: translateY(1px); }
+
+  @media (max-width: 600px) {
+    .panel {
+      top: 8px;
+      right: 8px;
+      width: calc(100% - 16px);
+      max-height: calc(100% - 16px);
+    }
+
+    .ctrl { grid-template-columns: 100px 1fr 42px; }
+  }
 </style>
 </head>
 <body>
@@ -273,7 +400,7 @@
     <header class="card-head">
       <div class="brand">
         <span class="status-dot" aria-hidden="true"></span>
-        <span class="title">// BLOOM.SEQ — ROSE 042</span>
+        <span class="title">// BLOOM.SEQ - ROSE 042</span>
       </div>
       <div class="head-actions">
         <span class="meta">LIVE · LOOP</span>
@@ -283,17 +410,42 @@
     </header>
 
     <div class="stage" id="stage">
+      <div class="source-preview" id="sourcePreview">
+        <div class="source-preview-label">// SOURCE VIDEO</div>
+        <div id="sourceVideoSlot"></div>
+      </div>
       <div class="overlay scanlines" id="scanlines" hidden></div>
       <div class="overlay vignette" id="vignette" hidden></div>
       <div class="overlay clickstart" id="clickstart">▶ CLICK TO START</div>
       <div class="fps" id="fps" hidden>0 FPS</div>
 
       <div class="panel" id="panel" hidden>
-        <h2>// TUNING</h2>
+        <h2><span>// TUNING</span><button id="closeTuneBtn" class="panel-close" type="button" aria-label="Close tuning panel" title="Close">×</button></h2>
         <div class="dbg" id="dbg"></div>
 
+        <div class="panel-section-label">View</div>
+
         <div class="row">
-          <label for="ctrlBgMode">BACKGROUND</label>
+          <label for="ctrlProcessing">Processing</label>
+          <select id="ctrlProcessing">
+            <option value="realtime">realtime</option>
+            <option value="enhanced" selected>enhanced</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="ctrlRenderStyle">Render style</label>
+          <select id="ctrlRenderStyle">
+            <option value="ascii">ascii</option>
+            <option value="dots">dots</option>
+            <option value="round-dots" selected>round-dots</option>
+          </select>
+        </div>
+
+        <div class="panel-section-label">Background</div>
+
+        <div class="row">
+          <label for="ctrlBgMode">Background</label>
           <select id="ctrlBgMode">
             <option value="green">green-screen</option>
             <option value="colorkey">color-key</option>
@@ -303,127 +455,141 @@
           </select>
         </div>
 
+        <div class="panel-section-label">Clarity</div>
+
         <div class="ctrl">
-          <label for="ctrlCols">RESOLUTION</label>
+          <label for="ctrlCols">Resolution</label>
           <input id="ctrlCols" type="range" min="48" max="240" step="4" value="180">
           <output id="outCols">180</output>
         </div>
 
         <div class="row">
-          <label for="ctrlBayer">BAYER</label>
+          <label for="ctrlBayer">Bayer</label>
           <select id="ctrlBayer">
-            <option value="4">4 × 4</option>
-            <option value="8" selected>8 × 8</option>
+            <option value="4" selected>4 × 4</option>
+            <option value="8">8 × 8</option>
           </select>
-          <label for="ctrlKey">KEY</label>
+          <label for="ctrlKey">Key</label>
           <input id="ctrlKey" type="color" value="#00d414">
         </div>
 
         <div class="row">
-          <label for="ctrlTintColor">TINT</label>
+          <label for="ctrlTintColor">Tint</label>
           <input id="ctrlTintColor" type="color" value="#e8e5f7">
-          <label for="ctrlBg">BG</label>
+          <label for="ctrlBg">Background color</label>
           <input id="ctrlBg" type="color" value="#000000">
         </div>
 
         <div class="ctrl">
-          <label for="ctrlThresh">KEY THRESH</label>
-          <input id="ctrlThresh" type="range" min="0" max="0.4" step="0.005" value="0.06">
-          <output id="outThresh">0.06</output>
+          <label for="ctrlThresh">Key threshold</label>
+          <input id="ctrlThresh" type="range" min="0" max="100" step="1" value="10">
+          <output id="outThresh" class="value-input" contenteditable="true">10</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlSoft">KEY SOFT</label>
-          <input id="ctrlSoft" type="range" min="0" max="0.5" step="0.005" value="0.10">
-          <output id="outSoft">0.10</output>
+          <label for="ctrlSoft">Key softness</label>
+          <input id="ctrlSoft" type="range" min="0" max="100" step="1" value="16">
+          <output id="outSoft" class="value-input" contenteditable="true">16</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlCutoff">FG CUTOFF</label>
-          <input id="ctrlCutoff" type="range" min="0" max="1" step="0.01" value="0.08">
-          <output id="outCutoff">0.08</output>
+          <label for="ctrlCutoff">Foreground cutoff</label>
+          <input id="ctrlCutoff" type="range" min="0" max="100" step="1" value="4">
+          <output id="outCutoff" class="value-input" contenteditable="true">4</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlGreen">GREEN DOM</label>
-          <input id="ctrlGreen" type="range" min="-0.1" max="0.4" step="0.005" value="0.05">
-          <output id="outGreen">0.05</output>
+          <label for="ctrlGreen">Green dominance</label>
+          <input id="ctrlGreen" type="range" min="0" max="100" step="1" value="17">
+          <output id="outGreen" class="value-input" contenteditable="true">17</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlSpill">SPILL</label>
-          <input id="ctrlSpill" type="range" min="0" max="1" step="0.01" value="0.35">
-          <output id="outSpill">0.35</output>
+          <label for="ctrlSpill">Spill suppression</label>
+          <input id="ctrlSpill" type="range" min="0" max="100" step="1" value="35">
+          <output id="outSpill" class="value-input" contenteditable="true">35</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlBgOpacity">BG OPACITY</label>
-          <input id="ctrlBgOpacity" type="range" min="0" max="1" step="0.01" value="1">
-          <output id="outBgOpacity">1.00</output>
+          <label for="ctrlBgOpacity">Background opacity</label>
+          <input id="ctrlBgOpacity" type="range" min="0" max="100" step="1" value="100">
+          <output id="outBgOpacity" class="value-input" contenteditable="true">100</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlTint">TINT</label>
-          <input id="ctrlTint" type="range" min="0" max="1" step="0.01" value="0.45">
-          <output id="outTint">0.45</output>
+          <label for="ctrlTint">Tint strength</label>
+          <input id="ctrlTint" type="range" min="0" max="100" step="1" value="35">
+          <output id="outTint" class="value-input" contenteditable="true">35</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlGlitch">GLITCH</label>
-          <input id="ctrlGlitch" type="range" min="0" max="0.15" step="0.002" value="0.015">
-          <output id="outGlitch">0.015</output>
+          <label for="ctrlGlitch">Glitch</label>
+          <input id="ctrlGlitch" type="range" min="0" max="100" step="1" value="0">
+          <output id="outGlitch" class="value-input" contenteditable="true">0</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlNoise">NOISE</label>
-          <input id="ctrlNoise" type="range" min="0" max="0.1" step="0.002" value="0.05">
-          <output id="outNoise">0.05</output>
+          <label for="ctrlNoise">Noise</label>
+          <input id="ctrlNoise" type="range" min="0" max="100" step="1" value="0">
+          <output id="outNoise" class="value-input" contenteditable="true">0</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlContrast">CONTRAST</label>
-          <input id="ctrlContrast" type="range" min="0.6" max="2.5" step="0.05" value="1.7">
-          <output id="outContrast">1.70</output>
+          <label for="ctrlContrast">Contrast</label>
+          <input id="ctrlContrast" type="range" min="0" max="100" step="1" value="58">
+          <output id="outContrast" class="value-input" contenteditable="true">58</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlEdge">EDGE</label>
-          <input id="ctrlEdge" type="range" min="0" max="2" step="0.05" value="0.8">
-          <output id="outEdge">0.80</output>
+          <label for="ctrlEdge">Edge</label>
+          <input id="ctrlEdge" type="range" min="0" max="100" step="1" value="30">
+          <output id="outEdge" class="value-input" contenteditable="true">30</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlLocal">LOCAL CONTRAST</label>
-          <input id="ctrlLocal" type="range" min="0" max="2" step="0.05" value="0.9">
-          <output id="outLocal">0.90</output>
+          <label for="ctrlLocal">Local contrast</label>
+          <input id="ctrlLocal" type="range" min="0" max="100" step="1" value="40">
+          <output id="outLocal" class="value-input" contenteditable="true">40</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlCrease">CREASE</label>
-          <input id="ctrlCrease" type="range" min="0" max="1.5" step="0.05" value="0.65">
-          <output id="outCrease">0.65</output>
+          <label for="ctrlCrease">Crease</label>
+          <input id="ctrlCrease" type="range" min="0" max="100" step="1" value="30">
+          <output id="outCrease" class="value-input" contenteditable="true">30</output>
         </div>
 
         <div class="ctrl">
-          <label for="ctrlSubject">SUBJECT BOOST</label>
-          <input id="ctrlSubject" type="range" min="0" max="1.5" step="0.05" value="0.8">
-          <output id="outSubject">0.80</output>
+          <label for="ctrlSubject">Subject boost</label>
+          <input id="ctrlSubject" type="range" min="0" max="100" step="1" value="40">
+          <output id="outSubject" class="value-input" contenteditable="true">40</output>
         </div>
+
+        <div class="panel-section-label">Finish</div>
 
         <div class="row">
-          <label for="ctrlRamp">RAMP</label>
+          <label for="ctrlRamp">Glyph ramp</label>
           <input id="ctrlRamp" type="text" value=" .:-=+*#%@">
         </div>
 
+        <div class="panel-section-label">Playback</div>
         <div class="btn-grid">
-          <button id="restartBtn" class="ghost" type="button">RESTART</button>
-          <button id="reverseBtn" class="ghost" type="button">REVERSE LOOP</button>
-          <button id="scanBtn" class="ghost" type="button">SCANLINES</button>
-          <button id="vignetteBtn" class="ghost" type="button">VIGNETTE</button>
-          <button id="matteBtn" class="ghost" type="button">MATTE</button>
-          <button id="sampleKeyBtn" class="ghost" type="button">SAMPLE BG</button>
-          <button id="loadBtn" class="ghost" type="button">LOAD VIDEO</button>
-          <button id="resetBtn" class="ghost" type="button">DEFAULTS</button>
+          <button id="restartBtn" class="ghost" type="button">Restart</button>
+          <button id="reverseBtn" class="ghost" type="button">Reverse loop</button>
+        </div>
+
+        <div class="panel-section-label">Overlays</div>
+        <div class="btn-grid">
+          <button id="sourceBtn" class="ghost" type="button">Source video</button>
+          <button id="sampleKeyBtn" class="ghost" type="button">Sample background</button>
+          <button id="scanBtn" class="ghost" type="button">Scanlines</button>
+          <button id="vignetteBtn" class="ghost" type="button">Vignette</button>
+          <button id="matteBtn" class="ghost" type="button">Matte</button>
+        </div>
+
+        <div class="panel-section-label">Source</div>
+        <div class="btn-grid">
+          <button id="loadBtn" class="ghost" type="button">Load video</button>
+          <button id="resetBtn" class="ghost" type="button">Defaults</button>
         </div>
       </div>
     </div>
@@ -438,12 +604,12 @@
       videoUrl: 'flower.mp4',
       cols: 180,
       rows: 0,
-      bayerSize: 8,
+      bayerSize: 4,
       glyphRamp: ' .:-=+*#%@',
       keyColor: '#00d414',
-      keyThreshold: 0.06,
-      keySoftness: 0.10,
-      foregroundCutoff: 0.08,
+      keyThreshold: 0.04,
+      keySoftness: 0.08,
+      foregroundCutoff: 0.04,
       backgroundMode: 'black',
       greenDominance: 0.05,
       spillSuppression: 0.35,
@@ -451,17 +617,20 @@
       showMatte: false,
       glitchFrequency: 0.0,
       noise: 0.0,
-      tintStrength: 0.45,
+      tintStrength: 0.35,
       contrast: 1.7,
-      edgeGain: 0.8,
-      localContrastStrength: 0.9,
-      creaseStrength: 0.65,
-      subjectBoost: 0.8,
+      edgeGain: 0.6,
+      localContrastStrength: 0.8,
+      creaseStrength: 0.45,
+      subjectBoost: 0.6,
       duration: 3.166667,
       tintColor: '#e8e5f7',
       background: '#000000',
       backgroundColor: '#000000',
       reverseLoop: false,
+      processingMode: 'enhanced',
+      renderStyle: 'round-dots',
+      sourceVideoVisible: true,
     };
 
     const params = { ...DEFAULTS };
@@ -491,6 +660,9 @@
     let showFPS = false;
     let showMatte = false;
     let vignetteOn = false;
+    let sourceVideoVisible = DEFAULTS.sourceVideoVisible;
+    let sampledBackgroundActive = false;
+    let sampledBackgroundRestore = null;
     let playbackDirection = 1;
     let lastAnimationAt = performance.now();
     let frames = 0;
@@ -592,6 +764,7 @@
         ? params.rows
         : Math.max(8, Math.round((cols * 0.5) / aspect));
       uniforms.uGrid.value.set(cols, rows);
+      uniforms.uCellAspect.value = ((1 / aspect) * cols) / rows;
       return { cols, rows };
     }
 
@@ -607,7 +780,7 @@
       const bg = hexToRgb01(bgHex);
       uniforms.uTintColor.value.set(tint[0], tint[1], tint[2]);
       uniforms.uBg.value.set(bg[0], bg[1], bg[2]);
-      renderer.setClearColor(new THREE.Color().setRGB(bg[0], bg[1], bg[2], THREE.LinearSRGBColorSpace), 1);
+      renderer.setClearColor(new THREE.Color().setRGB(bg[0], bg[1], bg[2], THREE.LinearSRGBColorSpace), sourceVideoVisible ? 0 : 1);
     }
 
     function bgModeIndex(mode) {
@@ -617,13 +790,29 @@
     function updateDebug() {
       const dbg = document.getElementById('dbg');
       if (!dbg) return;
-      const durationText = Number.isFinite(params.duration) ? params.duration.toFixed(3) + 's' : '—';
-      dbg.textContent = 'MODE  ' + params.backgroundMode + '  ·  SOURCE DURATION  ' + durationText + '\nKEY   ' + params.keyColor + '  THRESH ' + params.keyThreshold.toFixed(3) + '  SOFT ' + params.keySoftness.toFixed(3) + '\nGREEN ' + params.greenDominance.toFixed(3) + '  SPILL ' + params.spillSuppression.toFixed(2) + (showMatte ? '\nMATTE  ON' : '');
+      const durationText = Number.isFinite(params.duration) ? params.duration.toFixed(3) + 's' : '-';
+      dbg.textContent = 'MODE  ' + params.backgroundMode + '  ·  SOURCE DURATION  ' + durationText + '\nPROCESSING  ' + params.processingMode + '  ·  RENDER  ' + params.renderStyle + '\nKEY   ' + params.keyColor + '  THRESH ' + params.keyThreshold.toFixed(3) + '  SOFT ' + params.keySoftness.toFixed(3) + '\nGREEN ' + params.greenDominance.toFixed(3) + '  SPILL ' + params.spillSuppression.toFixed(2) + (showMatte ? '\nMATTE  ON' : '');
     }
 
     function sampleBackgroundFromVideo() {
+      if (sampledBackgroundActive) {
+        if (sampledBackgroundRestore) {
+          params.keyColor = sampledBackgroundRestore.keyColor;
+          params.backgroundMode = sampledBackgroundRestore.backgroundMode;
+          document.getElementById('ctrlKey').value = params.keyColor;
+          document.getElementById('ctrlBgMode').value = params.backgroundMode;
+          setKeyColor(params.keyColor);
+          uniforms.uBgMode.value = bgModeIndex(params.backgroundMode);
+        }
+        sampledBackgroundActive = false;
+        sampledBackgroundRestore = null;
+        document.getElementById('sampleKeyBtn').classList.remove('active');
+        updateDebug();
+        return;
+      }
       if (!video || video.readyState < 2 || !video.videoWidth) return;
       try {
+        sampledBackgroundRestore = { keyColor: params.keyColor, backgroundMode: params.backgroundMode };
         const canvas = document.createElement('canvas');
         canvas.width = 4; canvas.height = 1;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -643,6 +832,8 @@
         params.backgroundMode = 'colorkey';
         document.getElementById('ctrlBgMode').value = 'colorkey';
         uniforms.uBgMode.value = 1;
+        sampledBackgroundActive = true;
+        document.getElementById('sampleKeyBtn').classList.add('active');
         updateDebug();
       } catch (error) {}
     }
@@ -692,7 +883,7 @@
     function init(opts = {}) {
       Object.assign(params, opts);
 
-      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'high-performance' });
       renderer.setClearColor(0x000000, 1);
       stage.insertBefore(renderer.domElement, stage.firstChild);
 
@@ -708,6 +899,9 @@
       video.loop = !params.reverseLoop;
       video.preload = 'auto';
       video.crossOrigin = 'anonymous';
+      video.controls = false;
+      video.className = 'source-video';
+      document.getElementById('sourceVideoSlot').appendChild(video);
 
       videoTexture = new THREE.VideoTexture(video);
       videoTexture.minFilter = THREE.LinearFilter;
@@ -719,6 +913,7 @@
         uGlyph: { value: glyphTex },
         uBayer: { value: bayerTex },
         uGrid: { value: new THREE.Vector2(params.cols, 68) },
+        uCellAspect: { value: 1 },
         uGlyphCount: { value: params.glyphRamp.length },
         uKeyChroma: { value: new THREE.Vector2(0.253, 0.146) },
         uKeyThreshold: { value: params.keyThreshold },
@@ -738,6 +933,9 @@
         uBg: { value: new THREE.Vector3().fromArray(hexToRgb01(params.background)) },
         uContrast: { value: params.contrast },
         uEdgeGain: { value: params.edgeGain },
+        uProcessingMode: { value: params.processingMode === 'enhanced' ? 1 : 0 },
+        uRenderMode: { value: params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : 0 },
+        uSourceLayer: { value: params.sourceVideoVisible ? 1 : 0 },
         uLocalContrast: { value: params.localContrastStrength },
         uCrease: { value: params.creaseStrength },
         uSubjectBoost: { value: params.subjectBoost },
@@ -760,6 +958,7 @@
           'uniform sampler2D uGlyph;',
           'uniform sampler2D uBayer;',
           'uniform vec2 uGrid;',
+          'uniform float uCellAspect;',
           'uniform float uGlyphCount;',
           'uniform vec2 uKeyChroma;',
           'uniform float uKeyThreshold;',
@@ -779,6 +978,9 @@
           'uniform vec3 uBg;',
           'uniform float uContrast;',
           'uniform float uEdgeGain;',
+          'uniform float uProcessingMode;',
+          'uniform float uRenderMode;',
+          'uniform float uSourceLayer;',
           'uniform float uLocalContrast;',
           'uniform float uCrease;',
           'uniform float uSubjectBoost;',
@@ -821,6 +1023,15 @@
           'vec3 sampleVideo(vec2 uv) {',
           '  return texture2D(uVideo, clamp(uv, 0.001, 0.999)).rgb;',
           '} ',
+          'vec3 sampleCell(vec2 cell) {',
+          '  vec2 halfCell = 0.25 / uGrid;',
+          '  vec2 center = (cell + vec2(0.5, 0.5)) / uGrid;',
+          '  vec3 c00 = sampleVideo(center - halfCell);',
+          '  vec3 c10 = sampleVideo(center + vec2(halfCell.x, -halfCell.y));',
+          '  vec3 c01 = sampleVideo(center + vec2(-halfCell.x, halfCell.y));',
+          '  vec3 c11 = sampleVideo(center + halfCell);',
+          '  return 0.25 * (c00 + c10 + c01 + c11);',
+          '}',
           'void main() {',
           '  float frame = floor(uTime * 30.0);',
           '  float roll = hash2(vec2(frame, 11.0));',
@@ -834,15 +1045,15 @@
           '    gl_FragColor = vec4(vec3(keyedRGB(sampleVideo(vUv), 0.0).y), 1.0);',
           '    return;',
           '  }',
-          '  vec3 c = sampleVideo((cellG + vec2(0.5, 0.5)) / uGrid);',
+          '  vec3 c = sampleCell(cellG);',
           '  float localEdge = 0.0;',
           '  float localVariation = 0.0;',
           '  if (uBgMode > 1.5 && uBgMode < 2.5) {',
           '    float lc = luma(c);',
-          '    float lumL0 = luma(sampleVideo((cellG + vec2(-0.5, 0.5)) / uGrid));',
-          '    float lumR0 = luma(sampleVideo((cellG + vec2(1.5, 0.5)) / uGrid));',
-          '    float lumD0 = luma(sampleVideo((cellG + vec2(0.5, -0.5)) / uGrid));',
-          '    float lumU0 = luma(sampleVideo((cellG + vec2(0.5, 1.5)) / uGrid));',
+          '    float lumL0 = luma(sampleCell(cellG + vec2(-1.0, 0.0)));',
+          '    float lumR0 = luma(sampleCell(cellG + vec2(1.0, 0.0)));',
+          '    float lumD0 = luma(sampleCell(cellG + vec2(0.0, -1.0)));',
+          '    float lumU0 = luma(sampleCell(cellG + vec2(0.0, 1.0)));',
           '    float neighborMean0 = 0.25 * (lumL0 + lumR0 + lumD0 + lumU0);',
           '    localVariation = abs(lc - neighborMean0);',
           '    localEdge = abs(lumR0 - lumL0) + abs(lumU0 - lumD0);',
@@ -861,16 +1072,16 @@
           '  float pixelAlpha = keyedRGB(sampleVideo(vUv), 0.0).y;',
           '  bool pixelGateRequired = !(uBgMode > 1.5 && uBgMode < 2.5);',
           '  if (fgAlpha < uForegroundCutoff || (pixelGateRequired && pixelAlpha < uForegroundCutoff)) {',
-          '    gl_FragColor = vec4(uBg, 1.0);',
+          '    gl_FragColor = vec4(uBg, 1.0 - uSourceLayer);',
           '    return;',
           '  }',
           '  float edge = 0.0;',
           '  float localContrast = 0.0;',
           '  if (uEdgeGain > 0.0001 || uLocalContrast > 0.0001 || uCrease > 0.0001 || uSubjectBoost > 0.0001) {',
-          '    vec3 cL = sampleVideo((cellG + vec2(-0.5, 0.5)) / uGrid);',
-          '    vec3 cR = sampleVideo((cellG + vec2(1.5, 0.5)) / uGrid);',
-          '    vec3 cD = sampleVideo((cellG + vec2(0.5, -0.5)) / uGrid);',
-          '    vec3 cU = sampleVideo((cellG + vec2(0.5, 1.5)) / uGrid);',
+          '    vec3 cL = sampleCell(cellG + vec2(-1.0, 0.0));',
+          '    vec3 cR = sampleCell(cellG + vec2(1.0, 0.0));',
+          '    vec3 cD = sampleCell(cellG + vec2(0.0, -1.0));',
+          '    vec3 cU = sampleCell(cellG + vec2(0.0, 1.0));',
           '    vec2 gL = keyedRGB(cL, 0.0);',
           '    vec2 gR = keyedRGB(cR, 0.0);',
           '    vec2 gD = keyedRGB(cD, 0.0);',
@@ -881,13 +1092,14 @@
           '    edge = clamp(edgeRaw * uEdgeGain, 0.0, 1.0);',
           '  }',
           '  float n = hash2(vUv * uGrid * 0.71 + vec2(uTime * 1.31, uTime * 2.17));',
-          '  float tone = clamp((lum - 0.5) * uContrast + 0.5, 0.0, 1.0);',
+          '  float clarity = mix(1.0, 1.28, uProcessingMode);',
+          '  float tone = clamp((lum - 0.5) * (uContrast * clarity) + 0.5, 0.0, 1.0);',
           '  float darkCrease = (1.0 - smoothstep(0.10, 0.42, lum)) * smoothstep(0.08, 0.42, edge);',
           '  float importance = clamp(fgAlpha * (0.65 + edge * 0.35), 0.0, 1.0);',
-          '  tone += localContrast * uLocalContrast;',
-          '  tone += edge * 0.55;',
-          '  tone += edge * uSubjectBoost * importance;',
-          '  tone -= darkCrease * uCrease;',
+          '  tone += localContrast * uLocalContrast * clarity;',
+          '  tone += edge * 0.55 * clarity;',
+          '  tone += edge * uSubjectBoost * importance * clarity;',
+          '  tone -= darkCrease * uCrease * clarity;',
           '  tone = clamp(0.07 * fgAlpha + tone * 0.80 + (n - 0.5) * uFlicker, 0.0, 1.0);',
           '  float q = tone * (uGlyphCount - 1.0);',
           '  float lower = floor(q);',
@@ -898,13 +1110,20 @@
           '  vec2 cellUV = fract(vUv * uGrid);',
           '  vec2 glyphUV = vec2((cellUV.x + idx) / uGlyphCount, cellUV.y);',
           '  float glyphAlpha = texture2D(uGlyph, glyphUV).a;',
+          '  float dotTone = clamp(tone + (bayerVal - 0.5) * 0.12, 0.0, 1.0);',
+          '  float dotRadius = mix(0.045, 0.48, dotTone);',
+          '  vec2 dotDelta = cellUV - vec2(0.5);',
+          '  dotDelta.y *= mix(1.0, uCellAspect, step(1.5, uRenderMode));',
+          '  float dotDistance = length(dotDelta);',
+          '  float dotAlpha = 1.0 - smoothstep(dotRadius - 0.045, dotRadius, dotDistance);',
+          '  glyphAlpha = mix(glyphAlpha, dotAlpha, step(0.5, uRenderMode));',
           '  vec3 sourceTint = mix(vec3(lum), c, uTintStrength);',
           '  vec3 tint = mix(sourceTint, uTintColor, 0.72);',
           '  tint *= 0.85;',
           '  float coverage = clamp(fgAlpha * glyphAlpha, 0.0, 1.0);',
           '  coverage = clamp((coverage - 0.04) / 0.96, 0.0, 1.0);',
           '  vec3 bgCol = uBg * uBgOpacity;',
-          '  gl_FragColor = vec4(mix(bgCol, tint, coverage), 1.0);',
+          '  gl_FragColor = vec4(mix(bgCol, tint, coverage), mix(1.0, coverage, uSourceLayer));',
           '}',
         ].join('\n'),
         uniforms,
@@ -941,7 +1160,7 @@
         lastAnimationAt = performance.now();
       });
       video.addEventListener('playing', hideClickStart);
-      video.addEventListener('error', () => showClickStart('VIDEO NOT FOUND — CLICK TO LOAD'));
+      video.addEventListener('error', () => showClickStart('VIDEO NOT FOUND - CLICK TO LOAD'));
 
       loadVideoSource(params.videoUrl);
 
@@ -990,6 +1209,11 @@
         document.getElementById('tuneBtn').classList.toggle('active', !panelEl.hidden);
       });
 
+      document.getElementById('closeTuneBtn').addEventListener('click', () => {
+        panelEl.hidden = true;
+        document.getElementById('tuneBtn').classList.remove('active');
+      });
+
       const ctrlCols = document.getElementById('ctrlCols');
       const outCols = document.getElementById('outCols');
       ctrlCols.addEventListener('input', () => {
@@ -1019,10 +1243,24 @@
         updateDebug();
       });
 
+      const ctrlProcessing = document.getElementById('ctrlProcessing');
+      ctrlProcessing.addEventListener('change', () => {
+        params.processingMode = ctrlProcessing.value;
+        uniforms.uProcessingMode.value = params.processingMode === 'enhanced' ? 1 : 0;
+        updateDebug();
+      });
+
+      const ctrlRenderStyle = document.getElementById('ctrlRenderStyle');
+      ctrlRenderStyle.addEventListener('change', () => {
+        params.renderStyle = ctrlRenderStyle.value;
+        uniforms.uRenderMode.value = params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : 0;
+        updateDebug();
+      });
+
       const ctrlThresh = document.getElementById('ctrlThresh');
       const outThresh = document.getElementById('outThresh');
       ctrlThresh.addEventListener('input', () => {
-        params.keyThreshold = parseFloat(ctrlThresh.value);
+        params.keyThreshold = parseFloat(ctrlThresh.value) / 100 * 0.4;
         outThresh.textContent = ctrlThresh.value;
         uniforms.uKeyThreshold.value = params.keyThreshold;
         updateDebug();
@@ -1031,7 +1269,7 @@
       const ctrlSoft = document.getElementById('ctrlSoft');
       const outSoft = document.getElementById('outSoft');
       ctrlSoft.addEventListener('input', () => {
-        params.keySoftness = parseFloat(ctrlSoft.value);
+        params.keySoftness = parseFloat(ctrlSoft.value) / 100 * 0.5;
         outSoft.textContent = ctrlSoft.value;
         uniforms.uKeySoftness.value = params.keySoftness;
         updateDebug();
@@ -1040,7 +1278,7 @@
       const ctrlCutoff = document.getElementById('ctrlCutoff');
       const outCutoff = document.getElementById('outCutoff');
       ctrlCutoff.addEventListener('input', () => {
-        params.foregroundCutoff = parseFloat(ctrlCutoff.value);
+        params.foregroundCutoff = parseFloat(ctrlCutoff.value) / 100;
         outCutoff.textContent = ctrlCutoff.value;
         uniforms.uForegroundCutoff.value = params.foregroundCutoff;
       });
@@ -1048,7 +1286,7 @@
       const ctrlGreen = document.getElementById('ctrlGreen');
       const outGreen = document.getElementById('outGreen');
       ctrlGreen.addEventListener('input', () => {
-        params.greenDominance = parseFloat(ctrlGreen.value);
+        params.greenDominance = parseFloat(ctrlGreen.value) / 100 * 0.3;
         outGreen.textContent = ctrlGreen.value;
         uniforms.uGreenDominance.value = params.greenDominance;
         updateDebug();
@@ -1057,7 +1295,7 @@
       const ctrlSpill = document.getElementById('ctrlSpill');
       const outSpill = document.getElementById('outSpill');
       ctrlSpill.addEventListener('input', () => {
-        params.spillSuppression = parseFloat(ctrlSpill.value);
+        params.spillSuppression = parseFloat(ctrlSpill.value) / 100;
         outSpill.textContent = ctrlSpill.value;
         uniforms.uSpill.value = params.spillSuppression;
         updateDebug();
@@ -1066,15 +1304,15 @@
       const ctrlBgOpacity = document.getElementById('ctrlBgOpacity');
       const outBgOpacity = document.getElementById('outBgOpacity');
       ctrlBgOpacity.addEventListener('input', () => {
-        params.backgroundOpacity = parseFloat(ctrlBgOpacity.value);
-        outBgOpacity.textContent = params.backgroundOpacity.toFixed(2);
+        params.backgroundOpacity = parseFloat(ctrlBgOpacity.value) / 100;
+        outBgOpacity.textContent = ctrlBgOpacity.value;
         uniforms.uBgOpacity.value = params.backgroundOpacity;
       });
 
       const ctrlNoise = document.getElementById('ctrlNoise');
       const outNoise = document.getElementById('outNoise');
       ctrlNoise.addEventListener('input', () => {
-        params.noise = parseFloat(ctrlNoise.value);
+        params.noise = parseFloat(ctrlNoise.value) / 100 * 0.1;
         outNoise.textContent = ctrlNoise.value;
         uniforms.uFlicker.value = params.noise;
       });
@@ -1095,7 +1333,7 @@
       const ctrlContrast = document.getElementById('ctrlContrast');
       const outContrast = document.getElementById('outContrast');
       ctrlContrast.addEventListener('input', () => {
-        params.contrast = parseFloat(ctrlContrast.value);
+        params.contrast = 0.6 + parseFloat(ctrlContrast.value) / 100 * 1.9;
         outContrast.textContent = ctrlContrast.value;
         uniforms.uContrast.value = params.contrast;
       });
@@ -1103,39 +1341,39 @@
       const ctrlEdge = document.getElementById('ctrlEdge');
       const outEdge = document.getElementById('outEdge');
       ctrlEdge.addEventListener('input', () => {
-        params.edgeGain = parseFloat(ctrlEdge.value);
-        outEdge.textContent = params.edgeGain.toFixed(2);
+        params.edgeGain = parseFloat(ctrlEdge.value) / 100 * 2;
+        outEdge.textContent = ctrlEdge.value;
         uniforms.uEdgeGain.value = params.edgeGain;
       });
 
       const ctrlLocal = document.getElementById('ctrlLocal');
       const outLocal = document.getElementById('outLocal');
       ctrlLocal.addEventListener('input', () => {
-        params.localContrastStrength = parseFloat(ctrlLocal.value);
-        outLocal.textContent = params.localContrastStrength.toFixed(2);
+        params.localContrastStrength = parseFloat(ctrlLocal.value) / 100 * 2;
+        outLocal.textContent = ctrlLocal.value;
         uniforms.uLocalContrast.value = params.localContrastStrength;
       });
 
       const ctrlCrease = document.getElementById('ctrlCrease');
       const outCrease = document.getElementById('outCrease');
       ctrlCrease.addEventListener('input', () => {
-        params.creaseStrength = parseFloat(ctrlCrease.value);
-        outCrease.textContent = params.creaseStrength.toFixed(2);
+        params.creaseStrength = parseFloat(ctrlCrease.value) / 100 * 1.5;
+        outCrease.textContent = ctrlCrease.value;
         uniforms.uCrease.value = params.creaseStrength;
       });
 
       const ctrlSubject = document.getElementById('ctrlSubject');
       const outSubject = document.getElementById('outSubject');
       ctrlSubject.addEventListener('input', () => {
-        params.subjectBoost = parseFloat(ctrlSubject.value);
-        outSubject.textContent = params.subjectBoost.toFixed(2);
+        params.subjectBoost = parseFloat(ctrlSubject.value) / 100 * 1.5;
+        outSubject.textContent = ctrlSubject.value;
         uniforms.uSubjectBoost.value = params.subjectBoost;
       });
 
       const ctrlTint = document.getElementById('ctrlTint');
       const outTint = document.getElementById('outTint');
       ctrlTint.addEventListener('input', () => {
-        params.tintStrength = parseFloat(ctrlTint.value);
+        params.tintStrength = parseFloat(ctrlTint.value) / 100;
         outTint.textContent = ctrlTint.value;
         uniforms.uTintStrength.value = params.tintStrength;
       });
@@ -1143,10 +1381,41 @@
       const ctrlGlitch = document.getElementById('ctrlGlitch');
       const outGlitch = document.getElementById('outGlitch');
       ctrlGlitch.addEventListener('input', () => {
-        params.glitchFrequency = parseFloat(ctrlGlitch.value);
+        params.glitchFrequency = parseFloat(ctrlGlitch.value) / 100 * 0.15;
         outGlitch.textContent = ctrlGlitch.value;
         uniforms.uGlitchFrequency.value = params.glitchFrequency;
       });
+
+      function bindEditablePercent(output, range) {
+        const commit = () => {
+          const next = Math.max(0, Math.min(100, Math.round(parseFloat(output.textContent) || 0)));
+          output.textContent = String(next);
+          range.value = String(next);
+          range.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        output.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            output.blur();
+          }
+        });
+        output.addEventListener('blur', commit);
+      }
+
+      bindEditablePercent(outThresh, ctrlThresh);
+      bindEditablePercent(outSoft, ctrlSoft);
+      bindEditablePercent(outCutoff, ctrlCutoff);
+      bindEditablePercent(outGreen, ctrlGreen);
+      bindEditablePercent(outSpill, ctrlSpill);
+      bindEditablePercent(outBgOpacity, ctrlBgOpacity);
+      bindEditablePercent(outTint, ctrlTint);
+      bindEditablePercent(outGlitch, ctrlGlitch);
+      bindEditablePercent(outNoise, ctrlNoise);
+      bindEditablePercent(outContrast, ctrlContrast);
+      bindEditablePercent(outEdge, ctrlEdge);
+      bindEditablePercent(outLocal, ctrlLocal);
+      bindEditablePercent(outCrease, ctrlCrease);
+      bindEditablePercent(outSubject, ctrlSubject);
 
       const ctrlRamp = document.getElementById('ctrlRamp');
       ctrlRamp.addEventListener('change', () => {
@@ -1190,6 +1459,20 @@
         document.getElementById('vignetteBtn').classList.toggle('active', vignetteOn);
       });
 
+      const sourceBtn = document.getElementById('sourceBtn');
+      const sourcePreview = document.getElementById('sourcePreview');
+      sourcePreview.classList.toggle('visible', sourceVideoVisible);
+      sourceBtn.classList.toggle('active', sourceVideoVisible);
+      uniforms.uSourceLayer.value = sourceVideoVisible ? 1 : 0;
+      renderer.setClearAlpha(sourceVideoVisible ? 0 : 1);
+      sourceBtn.addEventListener('click', () => {
+        sourceVideoVisible = !sourceVideoVisible;
+        sourcePreview.classList.toggle('visible', sourceVideoVisible);
+        sourceBtn.classList.toggle('active', sourceVideoVisible);
+        uniforms.uSourceLayer.value = sourceVideoVisible ? 1 : 0;
+        renderer.setClearAlpha(sourceVideoVisible ? 0 : 1);
+      });
+
       document.getElementById('matteBtn').addEventListener('click', () => {
         showMatte = !showMatte;
         uniforms.uShowMatte.value = showMatte ? 1 : 0;
@@ -1207,26 +1490,36 @@
 
       document.getElementById('resetBtn').addEventListener('click', () => {
         Object.assign(params, DEFAULTS);
+        sampledBackgroundActive = false;
+        sampledBackgroundRestore = null;
+        document.getElementById('sampleKeyBtn').classList.remove('active');
         playbackDirection = 1;
         video.loop = !params.reverseLoop;
         reverseBtn.classList.toggle('active', params.reverseLoop);
+        sourceVideoVisible = params.sourceVideoVisible;
+        sourcePreview.classList.toggle('visible', sourceVideoVisible);
+        sourceBtn.classList.toggle('active', sourceVideoVisible);
+        uniforms.uSourceLayer.value = sourceVideoVisible ? 1 : 0;
+        renderer.setClearAlpha(sourceVideoVisible ? 0 : 1);
         ctrlCols.value = params.cols; outCols.textContent = params.cols;
         ctrlBayer.value = String(params.bayerSize);
-        ctrlThresh.value = params.keyThreshold; outThresh.textContent = params.keyThreshold;
-        ctrlSoft.value = params.keySoftness; outSoft.textContent = params.keySoftness;
-        ctrlCutoff.value = params.foregroundCutoff; outCutoff.textContent = params.foregroundCutoff.toFixed(2);
+        ctrlThresh.value = Math.round(params.keyThreshold / 0.4 * 100); outThresh.textContent = ctrlThresh.value;
+        ctrlSoft.value = Math.round(params.keySoftness / 0.5 * 100); outSoft.textContent = ctrlSoft.value;
+        ctrlCutoff.value = Math.round(params.foregroundCutoff * 100); outCutoff.textContent = ctrlCutoff.value;
         ctrlBgMode.value = params.backgroundMode;
-        ctrlGreen.value = params.greenDominance; outGreen.textContent = params.greenDominance.toFixed(3);
-        ctrlSpill.value = params.spillSuppression; outSpill.textContent = params.spillSuppression.toFixed(2);
-        ctrlBgOpacity.value = params.backgroundOpacity; outBgOpacity.textContent = params.backgroundOpacity.toFixed(2);
-        ctrlTint.value = params.tintStrength; outTint.textContent = params.tintStrength;
-        ctrlGlitch.value = params.glitchFrequency; outGlitch.textContent = params.glitchFrequency;
-        ctrlNoise.value = params.noise; outNoise.textContent = params.noise;
-        ctrlContrast.value = params.contrast; outContrast.textContent = params.contrast;
-        ctrlEdge.value = params.edgeGain; outEdge.textContent = params.edgeGain.toFixed(2);
-        ctrlLocal.value = params.localContrastStrength; outLocal.textContent = params.localContrastStrength.toFixed(2);
-        ctrlCrease.value = params.creaseStrength; outCrease.textContent = params.creaseStrength.toFixed(2);
-        ctrlSubject.value = params.subjectBoost; outSubject.textContent = params.subjectBoost.toFixed(2);
+        ctrlProcessing.value = params.processingMode;
+        ctrlRenderStyle.value = params.renderStyle;
+        ctrlGreen.value = Math.round(params.greenDominance / 0.3 * 100); outGreen.textContent = ctrlGreen.value;
+        ctrlSpill.value = Math.round(params.spillSuppression * 100); outSpill.textContent = ctrlSpill.value;
+        ctrlBgOpacity.value = Math.round(params.backgroundOpacity * 100); outBgOpacity.textContent = ctrlBgOpacity.value;
+        ctrlTint.value = Math.round(params.tintStrength * 100); outTint.textContent = ctrlTint.value;
+        ctrlGlitch.value = Math.round(params.glitchFrequency / 0.15 * 100); outGlitch.textContent = ctrlGlitch.value;
+        ctrlNoise.value = Math.round(params.noise / 0.1 * 100); outNoise.textContent = ctrlNoise.value;
+        ctrlContrast.value = Math.round((params.contrast - 0.6) / 1.9 * 100); outContrast.textContent = ctrlContrast.value;
+        ctrlEdge.value = Math.round(params.edgeGain / 2 * 100); outEdge.textContent = ctrlEdge.value;
+        ctrlLocal.value = Math.round(params.localContrastStrength / 2 * 100); outLocal.textContent = ctrlLocal.value;
+        ctrlCrease.value = Math.round(params.creaseStrength / 1.5 * 100); outCrease.textContent = ctrlCrease.value;
+        ctrlSubject.value = Math.round(params.subjectBoost / 1.5 * 100); outSubject.textContent = ctrlSubject.value;
         ctrlKey.value = params.keyColor;
         ctrlTintColor.value = params.tintColor;
         ctrlBg.value = params.background;
@@ -1237,6 +1530,8 @@
         uniforms.uKeySoftness.value = params.keySoftness;
         uniforms.uForegroundCutoff.value = params.foregroundCutoff;
         uniforms.uBgMode.value = bgModeIndex(params.backgroundMode);
+        uniforms.uProcessingMode.value = params.processingMode === 'enhanced' ? 1 : 0;
+        uniforms.uRenderMode.value = params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : 0;
         uniforms.uGreenDominance.value = params.greenDominance;
         uniforms.uSpill.value = params.spillSuppression;
         uniforms.uBgOpacity.value = params.backgroundOpacity;
@@ -1285,10 +1580,19 @@
           if (key === 'keySoftness') uniforms.uKeySoftness.value = value;
           if (key === 'foregroundCutoff') uniforms.uForegroundCutoff.value = value;
           if (key === 'backgroundMode') { uniforms.uBgMode.value = bgModeIndex(value); ctrlBgMode.value = value; updateDebug(); }
+          if (key === 'processingMode') { params.processingMode = value; ctrlProcessing.value = value; uniforms.uProcessingMode.value = value === 'enhanced' ? 1 : 0; updateDebug(); }
+          if (key === 'renderStyle') { params.renderStyle = value; ctrlRenderStyle.value = value; uniforms.uRenderMode.value = value === 'dots' ? 1 : value === 'round-dots' ? 2 : 0; updateDebug(); }
           if (key === 'greenDominance') uniforms.uGreenDominance.value = value;
           if (key === 'spillSuppression') uniforms.uSpill.value = value;
           if (key === 'backgroundOpacity') uniforms.uBgOpacity.value = value;
           if (key === 'showMatte') { showMatte = !!value; uniforms.uShowMatte.value = showMatte ? 1 : 0; updateDebug(); }
+          if (key === 'sourceVideoVisible') {
+            sourceVideoVisible = !!value;
+            sourcePreview.classList.toggle('visible', sourceVideoVisible);
+            sourceBtn.classList.toggle('active', sourceVideoVisible);
+            uniforms.uSourceLayer.value = sourceVideoVisible ? 1 : 0;
+            renderer.setClearAlpha(sourceVideoVisible ? 0 : 1);
+          }
           if (key === 'reverseLoop') {
             params.reverseLoop = !!value;
             playbackDirection = 1;
