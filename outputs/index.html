@@ -114,7 +114,7 @@
   .ghost:hover { color: var(--ink); border-color: var(--line); }
   .ghost.active { color: var(--ink); border-color: var(--accent); }
 
-  .stage { position: relative; line-height: 0; }
+  .stage { position: relative; isolation: isolate; line-height: 0; }
 
   .stage canvas { display: block; background: transparent; }
 
@@ -126,6 +126,7 @@
     overflow: hidden;
     background: #000;
     pointer-events: none;
+    isolation: isolate;
   }
 
   .source-preview.visible { display: block; }
@@ -151,7 +152,7 @@
     transform: none;
   }
 
-  .stage canvas { position: relative; z-index: 1; }
+  .stage canvas { position: relative; z-index: 1; opacity: 1; }
 
   .panel { z-index: 10; }
 
@@ -1115,7 +1116,7 @@
     function init(opts = {}) {
       Object.assign(params, opts);
 
-      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, premultipliedAlpha: false, powerPreference: 'high-performance' });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.setClearColor(0x000000, 1);
       stage.insertBefore(renderer.domElement, stage.firstChild);
