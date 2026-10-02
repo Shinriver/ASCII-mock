@@ -967,6 +967,17 @@
 
     async function exportGif() {
       if (!window.GIF) { setExportStatus('GIF encoder is loading. Try again shortly.'); return; }
+      let workerUrl;
+      try {
+        setExportStatus('Loading GIF encoder...');
+        const workerResponse = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+        if (!workerResponse.ok) throw new Error('worker download failed');
+        const workerSource = await workerResponse.text();
+        workerUrl = URL.createObjectURL(new Blob([workerSource], { type: 'application/javascript' }));
+      } catch (error) {
+        setExportStatus('GIF worker blocked by file://. Open this page through localhost.');
+        return;
+      }
       const { duration, total } = exportDuration();
       const fps = 12;
       const frameCount = Math.max(1, Math.ceil(total * fps));
@@ -975,7 +986,7 @@
       canvas.width = Math.max(2, Math.round(renderer.domElement.width * gifScale));
       canvas.height = Math.max(2, Math.round(renderer.domElement.height * gifScale));
       const context = canvas.getContext('2d');
-      const gif = new GIF({ workers: 2, quality: 20, width: canvas.width, height: canvas.height, workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js' });
+      const gif = new GIF({ workers: 2, quality: 20, width: canvas.width, height: canvas.height, workerScript: workerUrl });
       const previousTime = video.currentTime;
       const wasPlaying = !video.paused;
       video.pause();
@@ -991,6 +1002,7 @@
         gif.on('finished', (blob) => {
           downloadBlob(blob, 'bloom-seq.gif');
           setExportStatus('GIF export ready.');
+          URL.revokeObjectURL(workerUrl);
           resolve();
         });
         gif.on('abort', () => reject(new Error('GIF encoding aborted')));
@@ -998,7 +1010,10 @@
         setTimeout(() => {
           if (performance.now() - encodingStartedAt > 90000) reject(new Error('GIF encoding timed out. Try MP4 export.'));
         }, 90000);
-      }).catch((error) => setExportStatus('GIF export failed: ' + error.message));
+      }).catch((error) => {
+        URL.revokeObjectURL(workerUrl);
+        setExportStatus('GIF export failed: ' + error.message);
+      });
       video.currentTime = previousTime;
       if (wasPlaying) video.play();
     }
