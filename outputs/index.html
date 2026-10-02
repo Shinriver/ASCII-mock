@@ -200,6 +200,9 @@
     font-size: 13px;
     letter-spacing: 1.2px;
     backdrop-filter: blur(2px);
+    z-index: 12;
+    pointer-events: auto;
+    cursor: pointer;
   }
 
   .clickstart[hidden] { display: none; }
@@ -884,6 +887,16 @@
       clickEl.hidden = true;
     }
 
+    function requestVideoPlay() {
+      if (!video) return;
+      const play = video.play();
+      if (play && play.catch) {
+        play.catch((error) => {
+          showClickStart(error && error.name === 'NotAllowedError' ? 'CLICK TO PLAY' : 'PLAYBACK ERROR - OPEN TUNE');
+        });
+      }
+    }
+
     function loadVideoSource(src) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = src instanceof Blob || src instanceof File ? URL.createObjectURL(src) : null;
@@ -1370,6 +1383,10 @@
       });
       video.addEventListener('playing', hideClickStart);
       video.addEventListener('error', () => showClickStart('VIDEO NOT FOUND - CLICK TO LOAD'));
+      clickEl.addEventListener('click', (event) => {
+        event.stopPropagation();
+        requestVideoPlay();
+      });
 
       loadVideoSource(params.videoUrl);
 
@@ -1768,7 +1785,7 @@
 
       card.addEventListener('click', (e) => {
         if (e.target.closest('.panel') || e.target.closest('.ghost')) return;
-        if (video.paused) { const play = video.play(); if (play && play.catch) play.catch(() => {}); }
+        if (video.paused) requestVideoPlay();
       });
 
       stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.style.outline = '2px dashed var(--accent)'; });
