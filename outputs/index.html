@@ -383,6 +383,14 @@
 
   .btn-grid .ghost:active { transform: translateY(1px); }
 
+  .export-status {
+    min-height: 16px;
+    margin-top: 8px;
+    color: var(--ink-dim);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
   @media (max-width: 600px) {
     .panel {
       top: 8px;
@@ -428,17 +436,17 @@
         <div class="row">
           <label for="ctrlProcessing">Processing</label>
           <select id="ctrlProcessing">
-            <option value="realtime">realtime</option>
             <option value="enhanced" selected>enhanced</option>
+            <option value="realtime">realtime</option>
           </select>
         </div>
 
         <div class="row">
           <label for="ctrlRenderStyle">Render style</label>
           <select id="ctrlRenderStyle">
+            <option value="round-dots" selected>round-dots</option>
             <option value="ascii">ascii</option>
             <option value="dots">dots</option>
-            <option value="round-dots" selected>round-dots</option>
           </select>
         </div>
 
@@ -447,10 +455,10 @@
         <div class="row">
           <label for="ctrlBgMode">Background</label>
           <select id="ctrlBgMode">
-            <option value="green">green-screen</option>
-            <option value="colorkey">color-key</option>
             <option value="black" selected>black-background</option>
             <option value="white">white-background</option>
+            <option value="green">green-screen</option>
+            <option value="colorkey">color-key</option>
             <option value="off">off</option>
           </select>
         </div>
@@ -591,11 +599,19 @@
           <button id="loadBtn" class="ghost" type="button">Load video</button>
           <button id="resetBtn" class="ghost" type="button">Defaults</button>
         </div>
+
+        <div class="panel-section-label">Export</div>
+        <div class="btn-grid">
+          <button id="exportMp4Btn" class="ghost" type="button">Export MP4</button>
+          <button id="exportGifBtn" class="ghost" type="button">Export GIF</button>
+        </div>
+        <div class="export-status" id="exportStatus" role="status" aria-live="polite"></div>
       </div>
     </div>
   </main>
 
   <input id="fileInput" type="file" accept="video/*" hidden>
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
 
   <script type="module">
     import * as THREE from 'three';
@@ -878,6 +894,133 @@
       video.load();
       const play = video.play();
       if (play && play.catch) play.catch(() => showClickStart('TAP TO PLAY'));
+    }
+
+    function setExportStatus(message) {
+      const node = document.getElementById('exportStatus');
+      if (node) node.textContent = message;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function exportDuration() {
+      const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : params.duration;
+      return { duration, total: params.reverseLoop ? duration * 2 : duration };
+    }
+
+    function drawCompositeFrame(canvas, context) {
+      const { width, height } = canvas;
+      context.clearRect(0, 0, width, height);
+      if (sourceVideoVisible && video.readyState >= 2) {
+        context.save();
+        context.globalAlpha = 0.24;
+        context.filter = 'blur(8px) saturate(0.72) contrast(1.12)';
+        context.drawImage(video, 0, 0, width, height);
+        context.restore();
+      } else {
+        context.fillStyle = params.backgroundColor || params.background || '#000000';
+        context.fillRect(0, 0, width, height);
+      }
+      context.drawImage(renderer.domElement, 0, 0, width, height);
+      if (!scanEl.hidden) {
+        context.save();
+        context.globalAlpha = 0.35;
+        context.fillStyle = '#000';
+        for (let y = 2; y < height; y += 4) context.fillRect(0, y, width, 2);
+        context.restore();
+      }
+      if (!document.getElementById('vignette').hidden) {
+        const gradient = context.createRadialGradient(width / 2, height / 2, height * 0.22, width / 2, height / 2, height * 0.78);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.38)');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, width, height);
+      }
+    }
+
+    function exportTimeAt(time, duration) {
+      if (!params.reverseLoop || time <= duration) return Math.min(duration - 0.001, Math.max(0, time));
+      return Math.max(0.001, duration - (time - duration));
+    }
+
+    async function exportGif() {
+      if (!window.GIF) { setExportStatus('GIF encoder is loading. Try again shortly.'); return; }
+      const { duration, total } = exportDuration();
+      const fps = 15;
+      const frameCount = Math.max(1, Math.ceil(total * fps));
+      const canvas = document.createElement('canvas');
+      canvas.width = renderer.domElement.width;
+      canvas.height = renderer.domElement.height;
+      const context = canvas.getContext('2d');
+      const gif = new GIF({ workers: 2, quality: 8, width: canvas.width, height: canvas.height, workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js' });
+      const previousTime = video.currentTime;
+      const wasPlaying = !video.paused;
+      video.pause();
+      setExportStatus('Preparing GIF...');
+      for (let index = 0; index < frameCount; index++) {
+        await new Promise((resolve) => {
+          video.currentTime = exportTimeAt(index / fps, duration);
+          video.addEventListener('seeked', resolve, { once: true });
+        });
+        uniforms.uTime.value = video.currentTime;
+        renderer.render(scene, camera);
+        drawCompositeFrame(canvas, context);
+        gif.addFrame(canvas, { copy: true, delay: 1000 / fps });
+        setExportStatus('Preparing GIF... ' + Math.round((index + 1) / frameCount * 100) + '%');
+      }
+      gif.on('finished', (blob) => {
+        downloadBlob(blob, 'bloom-seq.gif');
+        setExportStatus('GIF export ready.');
+      });
+      gif.render();
+      video.currentTime = previousTime;
+      if (wasPlaying) video.play();
+    }
+
+    async function exportMp4() {
+      if (!window.MediaRecorder || !renderer.domElement.captureStream) { setExportStatus('MP4 recording is not supported in this browser.'); return; }
+      const mimeType = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
+      if (!mimeType) { setExportStatus('No supported video export format was found.'); return; }
+      const { duration, total } = exportDuration();
+      const canvas = document.createElement('canvas');
+      canvas.width = renderer.domElement.width;
+      canvas.height = renderer.domElement.height;
+      const context = canvas.getContext('2d');
+      const recorder = new MediaRecorder(canvas.captureStream(60), { mimeType, videoBitsPerSecond: 12000000 });
+      const chunks = [];
+      const previousTime = video.currentTime;
+      const wasPlaying = !video.paused;
+      video.pause();
+      recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+      recorder.onstop = () => {
+        downloadBlob(new Blob(chunks, { type: mimeType }), 'bloom-seq.' + (mimeType.includes('mp4') ? 'mp4' : 'webm'));
+        setExportStatus('Video export ready.');
+      };
+      setExportStatus('Recording current view...');
+      recorder.start();
+      const start = performance.now();
+      const tick = () => {
+        const elapsed = (performance.now() - start) / 1000;
+        if (elapsed >= total) {
+          recorder.stop();
+          video.currentTime = previousTime;
+          if (wasPlaying) video.play();
+          return;
+        }
+        video.currentTime = exportTimeAt(elapsed, duration);
+        uniforms.uTime.value = video.currentTime;
+        renderer.render(scene, camera);
+        drawCompositeFrame(canvas, context);
+        requestAnimationFrame(tick);
+      };
+      tick();
     }
 
     function init(opts = {}) {
@@ -1481,6 +1624,8 @@
       });
 
       document.getElementById('sampleKeyBtn').addEventListener('click', sampleBackgroundFromVideo);
+      document.getElementById('exportMp4Btn').addEventListener('click', exportMp4);
+      document.getElementById('exportGifBtn').addEventListener('click', exportGif);
 
       document.getElementById('loadBtn').addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
