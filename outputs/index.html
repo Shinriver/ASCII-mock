@@ -950,10 +950,25 @@
       return Math.max(0.001, duration - (time - duration));
     }
 
+    function seekVideo(time) {
+      return new Promise((resolve) => {
+        const finish = () => resolve();
+        video.addEventListener('seeked', finish, { once: true });
+        video.currentTime = Math.max(0, time);
+      });
+    }
+
+    async function renderExportFrame(time, duration, canvas, context) {
+      await seekVideo(exportTimeAt(time, duration));
+      uniforms.uTime.value = video.currentTime;
+      renderer.render(scene, camera);
+      drawCompositeFrame(canvas, context);
+    }
+
     async function exportGif() {
       if (!window.GIF) { setExportStatus('GIF encoder is loading. Try again shortly.'); return; }
       const { duration, total } = exportDuration();
-      const fps = 15;
+      const fps = 60;
       const frameCount = Math.max(1, Math.ceil(total * fps));
       const canvas = document.createElement('canvas');
       canvas.width = renderer.domElement.width;
@@ -965,13 +980,7 @@
       video.pause();
       setExportStatus('Preparing GIF...');
       for (let index = 0; index < frameCount; index++) {
-        await new Promise((resolve) => {
-          video.currentTime = exportTimeAt(index / fps, duration);
-          video.addEventListener('seeked', resolve, { once: true });
-        });
-        uniforms.uTime.value = video.currentTime;
-        renderer.render(scene, camera);
-        drawCompositeFrame(canvas, context);
+        await renderExportFrame(index / fps, duration, canvas, context);
         gif.addFrame(canvas, { copy: true, delay: 1000 / fps });
         setExportStatus('Preparing GIF... ' + Math.round((index + 1) / frameCount * 100) + '%');
       }
@@ -1005,22 +1014,21 @@
       };
       setExportStatus('Recording current view...');
       recorder.start();
-      const start = performance.now();
-      const tick = () => {
-        const elapsed = (performance.now() - start) / 1000;
-        if (elapsed >= total) {
+      let frameIndex = 0;
+      const frameCount = Math.ceil(total * 60);
+      const captureNext = async () => {
+        if (frameIndex >= frameCount) {
           recorder.stop();
           video.currentTime = previousTime;
           if (wasPlaying) video.play();
           return;
         }
-        video.currentTime = exportTimeAt(elapsed, duration);
-        uniforms.uTime.value = video.currentTime;
-        renderer.render(scene, camera);
-        drawCompositeFrame(canvas, context);
-        requestAnimationFrame(tick);
+        await renderExportFrame(frameIndex / 60, duration, canvas, context);
+        frameIndex += 1;
+        setExportStatus('Recording current view... ' + Math.round(frameIndex / frameCount * 100) + '%');
+        setTimeout(captureNext, 1000 / 60);
       };
-      tick();
+      captureNext();
     }
 
     function init(opts = {}) {
