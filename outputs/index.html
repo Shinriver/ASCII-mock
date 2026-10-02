@@ -1019,9 +1019,12 @@
     }
 
     async function exportMp4() {
-      if (!window.VideoEncoder || !window.VideoFrame) { setExportStatus('Offline MP4 encoding is not supported in this browser.'); return; }
+      if (!window.VideoEncoder || !window.VideoFrame) { setExportStatus('Offline video encoding is not supported in this browser.'); return; }
       let Muxer;
       let ArrayBufferTarget;
+      let outputExtension = 'mp4';
+      let outputMime = 'video/mp4';
+      let codec = 'avc';
       try {
         ({ Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.mjs'));
       } catch (error) {
@@ -1038,35 +1041,50 @@
       video.pause();
       const fps = 60;
       const frameCount = Math.ceil(total * fps);
+      const codecConfig = { codec: 'avc1.4d002a', width: canvas.width, height: canvas.height, bitrate: 12000000, framerate: fps };
+      if (!(await VideoEncoder.isConfigSupported(codecConfig)).supported) {
+        try {
+          ({ Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/webm-muxer@5.0.0/build/webm-muxer.mjs'));
+          outputExtension = 'webm';
+          outputMime = 'video/webm';
+          codec = 'vp9';
+          setExportStatus('H.264 unavailable. Encoding WebM fallback...');
+        } catch (error) {
+          setExportStatus('H.264 MP4 is unsupported here. Use a Chromium browser or Export GIF.');
+          return;
+        }
+      }
       const target = new ArrayBufferTarget();
       const muxer = new Muxer({
         target,
-        video: { codec: 'avc', width: canvas.width, height: canvas.height },
+        video: { codec, width: canvas.width, height: canvas.height, frameRate: fps },
         fastStart: 'in-memory',
       });
       const encoder = new VideoEncoder({
         output: (chunk, metadata) => muxer.addVideoChunk(chunk, metadata),
         error: (error) => setExportStatus('MP4 encoder error: ' + error.message),
       });
-      const codecConfig = { codec: 'avc1.4d002a', width: canvas.width, height: canvas.height, bitrate: 12000000, framerate: fps };
-      if (!(await VideoEncoder.isConfigSupported(codecConfig)).supported) {
-        setExportStatus('H.264 MP4 encoding is not supported in this browser.');
+      const encoderConfig = codec === 'avc'
+        ? codecConfig
+        : { codec: 'vp09.00.10.08', width: canvas.width, height: canvas.height, bitrate: 12000000, framerate: fps };
+      if (!(await VideoEncoder.isConfigSupported(encoderConfig)).supported) {
+        setExportStatus('No supported offline video codec is available. Use Export GIF.');
         return;
       }
-      encoder.configure(codecConfig);
-      setExportStatus('Encoding MP4 frames...');
+      encoder.configure(encoderConfig);
+      setExportStatus('Encoding ' + outputExtension.toUpperCase() + ' frames...');
       for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
         await renderExportFrame(frameIndex / fps, duration, canvas, context);
         const frame = new VideoFrame(canvas, { timestamp: Math.round(frameIndex * 1000000 / fps), duration: Math.round(1000000 / fps) });
         encoder.encode(frame, { keyFrame: frameIndex % (fps * 2) === 0 });
         frame.close();
-        if (frameIndex % 6 === 0) setExportStatus('Encoding MP4 frames... ' + Math.round((frameIndex + 1) / frameCount * 100) + '%');
+        if (frameIndex % 6 === 0) setExportStatus('Encoding ' + outputExtension.toUpperCase() + ' frames... ' + Math.round((frameIndex + 1) / frameCount * 100) + '%');
       }
       await encoder.flush();
       encoder.close();
       muxer.finalize();
-      downloadBlob(new Blob([target.buffer], { type: 'video/mp4' }), 'bloom-seq.mp4');
-      setExportStatus('MP4 export ready.');
+      downloadBlob(new Blob([target.buffer], { type: outputMime }), 'bloom-seq.' + outputExtension);
+      setExportStatus(outputExtension.toUpperCase() + ' export ready.');
       video.currentTime = previousTime;
       if (wasPlaying) video.play();
     }
