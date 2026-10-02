@@ -994,41 +994,56 @@
     }
 
     async function exportMp4() {
-      if (!window.MediaRecorder || !renderer.domElement.captureStream) { setExportStatus('MP4 recording is not supported in this browser.'); return; }
-      const mimeType = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
-      if (!mimeType) { setExportStatus('No supported video export format was found.'); return; }
+      if (!window.VideoEncoder || !window.VideoFrame) { setExportStatus('Offline MP4 encoding is not supported in this browser.'); return; }
+      let Muxer;
+      let ArrayBufferTarget;
+      try {
+        ({ Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.mjs'));
+      } catch (error) {
+        setExportStatus('MP4 muxer failed to load. GIF export is still available.');
+        return;
+      }
       const { duration, total } = exportDuration();
       const canvas = document.createElement('canvas');
       canvas.width = renderer.domElement.width;
       canvas.height = renderer.domElement.height;
       const context = canvas.getContext('2d');
-      const recorder = new MediaRecorder(canvas.captureStream(60), { mimeType, videoBitsPerSecond: 12000000 });
-      const chunks = [];
       const previousTime = video.currentTime;
       const wasPlaying = !video.paused;
       video.pause();
-      recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
-      recorder.onstop = () => {
-        downloadBlob(new Blob(chunks, { type: mimeType }), 'bloom-seq.' + (mimeType.includes('mp4') ? 'mp4' : 'webm'));
-        setExportStatus('Video export ready.');
-      };
-      setExportStatus('Recording current view...');
-      recorder.start();
-      let frameIndex = 0;
-      const frameCount = Math.ceil(total * 60);
-      const captureNext = async () => {
-        if (frameIndex >= frameCount) {
-          recorder.stop();
-          video.currentTime = previousTime;
-          if (wasPlaying) video.play();
-          return;
-        }
-        await renderExportFrame(frameIndex / 60, duration, canvas, context);
-        frameIndex += 1;
-        setExportStatus('Recording current view... ' + Math.round(frameIndex / frameCount * 100) + '%');
-        setTimeout(captureNext, 1000 / 60);
-      };
-      captureNext();
+      const fps = 60;
+      const frameCount = Math.ceil(total * fps);
+      const target = new ArrayBufferTarget();
+      const muxer = new Muxer({
+        target,
+        video: { codec: 'avc', width: canvas.width, height: canvas.height },
+        fastStart: 'in-memory',
+      });
+      const encoder = new VideoEncoder({
+        output: (chunk, metadata) => muxer.addVideoChunk(chunk, metadata),
+        error: (error) => setExportStatus('MP4 encoder error: ' + error.message),
+      });
+      const codecConfig = { codec: 'avc1.4d002a', width: canvas.width, height: canvas.height, bitrate: 12000000, framerate: fps };
+      if (!(await VideoEncoder.isConfigSupported(codecConfig)).supported) {
+        setExportStatus('H.264 MP4 encoding is not supported in this browser.');
+        return;
+      }
+      encoder.configure(codecConfig);
+      setExportStatus('Encoding MP4 frames...');
+      for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+        await renderExportFrame(frameIndex / fps, duration, canvas, context);
+        const frame = new VideoFrame(canvas, { timestamp: Math.round(frameIndex * 1000000 / fps), duration: Math.round(1000000 / fps) });
+        encoder.encode(frame, { keyFrame: frameIndex % (fps * 2) === 0 });
+        frame.close();
+        if (frameIndex % 6 === 0) setExportStatus('Encoding MP4 frames... ' + Math.round((frameIndex + 1) / frameCount * 100) + '%');
+      }
+      await encoder.flush();
+      encoder.close();
+      muxer.finalize();
+      downloadBlob(new Blob([target.buffer], { type: 'video/mp4' }), 'bloom-seq.mp4');
+      setExportStatus('MP4 export ready.');
+      video.currentTime = previousTime;
+      if (wasPlaying) video.play();
     }
 
     function init(opts = {}) {
