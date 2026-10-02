@@ -904,6 +904,12 @@
       playbackDirection = 1;
       lastAnimationAt = performance.now();
       video.src = objectUrl || src;
+      const videoSource = String(video.src);
+      if (videoSource.startsWith('http://') || videoSource.startsWith('https://')) {
+        video.crossOrigin = 'anonymous';
+      } else {
+        video.removeAttribute('crossorigin');
+      }
       video.load();
       const play = video.play();
       if (play && play.catch) play.catch(() => showClickStart('TAP TO PLAY'));
@@ -1122,7 +1128,6 @@
       video.playsInline = true;
       video.loop = !params.reverseLoop;
       video.preload = 'auto';
-      video.crossOrigin = 'anonymous';
       video.controls = false;
       video.className = 'source-video';
       document.getElementById('sourceVideoSlot').appendChild(video);
