@@ -968,14 +968,14 @@
     async function exportGif() {
       if (!window.GIF) { setExportStatus('GIF encoder is loading. Try again shortly.'); return; }
       const { duration, total } = exportDuration();
-      const fps = 30;
+      const fps = 12;
       const frameCount = Math.max(1, Math.ceil(total * fps));
       const canvas = document.createElement('canvas');
-      const gifScale = Math.min(1, 720 / Math.max(renderer.domElement.width, renderer.domElement.height));
+      const gifScale = Math.min(1, 480 / Math.max(renderer.domElement.width, renderer.domElement.height));
       canvas.width = Math.max(2, Math.round(renderer.domElement.width * gifScale));
       canvas.height = Math.max(2, Math.round(renderer.domElement.height * gifScale));
       const context = canvas.getContext('2d');
-      const gif = new GIF({ workers: 0, quality: 12, width: canvas.width, height: canvas.height });
+      const gif = new GIF({ workers: 2, quality: 20, width: canvas.width, height: canvas.height, workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js' });
       const previousTime = video.currentTime;
       const wasPlaying = !video.paused;
       video.pause();
@@ -986,6 +986,7 @@
         setExportStatus('Preparing GIF... ' + Math.round((index + 1) / frameCount * 100) + '%');
       }
       setExportStatus('Encoding GIF...');
+      const encodingStartedAt = performance.now();
       await new Promise((resolve, reject) => {
         gif.on('finished', (blob) => {
           downloadBlob(blob, 'bloom-seq.gif');
@@ -994,6 +995,9 @@
         });
         gif.on('abort', () => reject(new Error('GIF encoding aborted')));
         try { gif.render(); } catch (error) { reject(error); }
+        setTimeout(() => {
+          if (performance.now() - encodingStartedAt > 90000) reject(new Error('GIF encoding timed out. Try MP4 export.'));
+        }, 90000);
       }).catch((error) => setExportStatus('GIF export failed: ' + error.message));
       video.currentTime = previousTime;
       if (wasPlaying) video.play();
