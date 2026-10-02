@@ -968,13 +968,14 @@
     async function exportGif() {
       if (!window.GIF) { setExportStatus('GIF encoder is loading. Try again shortly.'); return; }
       const { duration, total } = exportDuration();
-      const fps = 60;
+      const fps = 30;
       const frameCount = Math.max(1, Math.ceil(total * fps));
       const canvas = document.createElement('canvas');
-      canvas.width = renderer.domElement.width;
-      canvas.height = renderer.domElement.height;
+      const gifScale = Math.min(1, 720 / Math.max(renderer.domElement.width, renderer.domElement.height));
+      canvas.width = Math.max(2, Math.round(renderer.domElement.width * gifScale));
+      canvas.height = Math.max(2, Math.round(renderer.domElement.height * gifScale));
       const context = canvas.getContext('2d');
-      const gif = new GIF({ workers: 0, quality: 8, width: canvas.width, height: canvas.height });
+      const gif = new GIF({ workers: 0, quality: 12, width: canvas.width, height: canvas.height });
       const previousTime = video.currentTime;
       const wasPlaying = !video.paused;
       video.pause();
