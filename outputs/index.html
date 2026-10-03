@@ -835,6 +835,16 @@
       sourceBtn.classList.toggle('active', sourceVideoVisible);
       uniforms.uSourceLayer.value = visible ? 1 : 0;
       renderer.setClearAlpha(visible ? 0 : 1);
+      if (isCleanWhiteMode()) {
+        scanEl.hidden = true;
+        document.getElementById('vignette').hidden = true;
+        document.getElementById('scanBtn').classList.remove('active');
+        document.getElementById('vignetteBtn').classList.remove('active');
+      }
+    }
+
+    function isCleanWhiteMode() {
+      return params.backgroundMode === 'white' && String(params.backgroundColor || params.background || '').toLowerCase() === '#ffffff';
     }
 
     function updateDebug() {
@@ -1318,7 +1328,8 @@
           '    float pixelLum = luma(pixelColor);',
           '    float pixelSat = max(pixelColor.r, max(pixelColor.g, pixelColor.b)) - min(pixelColor.r, min(pixelColor.g, pixelColor.b));',
           '    float whiteMatte = smoothstep(0.72, 0.985, pixelLum) * (1.0 - smoothstep(0.02, 0.20, pixelSat));',
-          '    if (whiteMatte > 0.72) {',
+          '    float cellWhite = 1.0 - g0.y;',
+          '    if (whiteMatte > 0.18 || cellWhite > 0.42 || pixelAlpha < 0.32) {',
           '      gl_FragColor = vec4(uBg, 1.0);',
           '      return;',
           '    }',
@@ -1708,12 +1719,14 @@
 
 
       document.getElementById('scanBtn').addEventListener('click', () => {
+        if (isCleanWhiteMode()) return;
         const enabled = scanEl.hidden;
         scanEl.hidden = !enabled;
         document.getElementById('scanBtn').classList.toggle('active', enabled);
       });
 
       document.getElementById('vignetteBtn').addEventListener('click', () => {
+        if (isCleanWhiteMode()) return;
         vignetteOn = !vignetteOn;
         document.getElementById('vignette').hidden = !vignetteOn;
         document.getElementById('vignetteBtn').classList.toggle('active', vignetteOn);
