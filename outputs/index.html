@@ -820,6 +820,23 @@
       return mode === 'colorkey' ? 1 : mode === 'black' ? 2 : mode === 'white' ? 3 : mode === 'off' ? 4 : 0;
     }
 
+    function isSolidWhiteBackground() {
+      const color = String(params.backgroundColor || params.background || '').toLowerCase();
+      return params.backgroundMode === 'white' && color === '#ffffff';
+    }
+
+    function updateSourceLayerForBackground() {
+      const suppressed = isSolidWhiteBackground();
+      const visible = sourceVideoVisible && !suppressed;
+      const sourcePreview = document.getElementById('sourcePreview');
+      const sourceBtn = document.getElementById('sourceBtn');
+      sourcePreview.classList.toggle('visible', visible);
+      sourcePreview.style.display = visible ? 'block' : 'none';
+      sourceBtn.classList.toggle('active', sourceVideoVisible);
+      uniforms.uSourceLayer.value = visible ? 1 : 0;
+      renderer.setClearAlpha(visible ? 0 : 1);
+    }
+
     function updateDebug() {
       const dbg = document.getElementById('dbg');
       if (!dbg) return;
@@ -1238,10 +1255,10 @@
           '  } else if (uBgMode < 3.5) {',
           '    float l = luma(v);',
           '    float saturation = max(v.r, max(v.g, v.b)) - min(v.r, min(v.g, v.b));',
-          '    float brightBackground = smoothstep(0.58, 0.94, l);',
-          '    float lowSaturation = 1.0 - smoothstep(0.04, 0.28, saturation);',
+          '    float brightBackground = smoothstep(0.72, 0.985, l);',
+          '    float lowSaturation = 1.0 - smoothstep(0.02, 0.20, saturation);',
           '    k = brightBackground * lowSaturation;',
-          '    k = max(k, smoothstep(0.72, 0.98, l) * lowSaturation);',
+          '    k = max(k, smoothstep(0.86, 0.995, l) * lowSaturation);',
           '    sp = mix(v, vec3(l), k * uSpill);',
           '  }',
           '  return vec2(luma(sp), 1.0 - k);',
@@ -1471,6 +1488,7 @@
       ctrlBgMode.addEventListener('change', () => {
         params.backgroundMode = ctrlBgMode.value;
         uniforms.uBgMode.value = bgModeIndex(params.backgroundMode);
+        updateSourceLayerForBackground();
         updateDebug();
       });
 
@@ -1556,9 +1574,10 @@
 
       const ctrlBg = document.getElementById('ctrlBg');
       ctrlBg.addEventListener('input', () => {
-        params.background = ctrlBg.value;
-        params.backgroundColor = ctrlBg.value;
-        applyColors();
+      params.background = ctrlBg.value;
+      params.backgroundColor = ctrlBg.value;
+      applyColors();
+      updateSourceLayerForBackground();
       });
 
       const ctrlContrast = document.getElementById('ctrlContrast');
@@ -1696,12 +1715,14 @@
       sourceBtn.classList.toggle('active', sourceVideoVisible);
       uniforms.uSourceLayer.value = sourceVideoVisible ? 1 : 0;
       renderer.setClearAlpha(sourceVideoVisible ? 0 : 1);
+      updateSourceLayerForBackground();
       sourceBtn.addEventListener('click', () => {
         sourceVideoVisible = !sourceVideoVisible;
         sourcePreview.classList.toggle('visible', sourceVideoVisible);
         sourceBtn.classList.toggle('active', sourceVideoVisible);
         uniforms.uSourceLayer.value = sourceVideoVisible ? 1 : 0;
         renderer.setClearAlpha(sourceVideoVisible ? 0 : 1);
+        updateSourceLayerForBackground();
       });
 
       document.getElementById('matteBtn').addEventListener('click', () => {
@@ -1836,7 +1857,7 @@
           if (key === 'glitchFrequency') uniforms.uGlitchFrequency.value = value;
           if (key === 'noise') uniforms.uFlicker.value = value;
           if (key === 'tintColor') applyColors();
-          if (key === 'background' || key === 'backgroundColor') { params.background = value; params.backgroundColor = value; applyColors(); }
+          if (key === 'background' || key === 'backgroundColor') { params.background = value; params.backgroundColor = value; applyColors(); updateSourceLayerForBackground(); }
           if (key === 'contrast') uniforms.uContrast.value = value;
           if (key === 'edgeGain') uniforms.uEdgeGain.value = value;
           if (key === 'localContrastStrength') uniforms.uLocalContrast.value = value;
