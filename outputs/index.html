@@ -820,13 +820,14 @@
       return mode === 'colorkey' ? 1 : mode === 'black' ? 2 : mode === 'white' ? 3 : mode === 'off' ? 4 : 0;
     }
 
-    function isSolidWhiteBackground() {
+    function isSolidBackground() {
       const color = String(params.backgroundColor || params.background || '').toLowerCase();
-      return params.backgroundMode === 'white' && color === '#ffffff';
+      return (params.backgroundMode === 'white' && color === '#ffffff')
+        || (params.backgroundMode === 'black' && color === '#000000');
     }
 
     function updateSourceLayerForBackground() {
-      const suppressed = isSolidWhiteBackground();
+      const suppressed = isSolidBackground();
       const visible = sourceVideoVisible && !suppressed;
       const sourcePreview = document.getElementById('sourcePreview');
       const sourceBtn = document.getElementById('sourceBtn');
@@ -835,16 +836,12 @@
       sourceBtn.classList.toggle('active', sourceVideoVisible);
       uniforms.uSourceLayer.value = visible ? 1 : 0;
       renderer.setClearAlpha(visible ? 0 : 1);
-      if (isCleanWhiteMode()) {
+      if (isSolidBackground()) {
         scanEl.hidden = true;
         document.getElementById('vignette').hidden = true;
         document.getElementById('scanBtn').classList.remove('active');
         document.getElementById('vignetteBtn').classList.remove('active');
       }
-    }
-
-    function isCleanWhiteMode() {
-      return params.backgroundMode === 'white' && String(params.backgroundColor || params.background || '').toLowerCase() === '#ffffff';
     }
 
     function updateDebug() {
@@ -1301,7 +1298,7 @@
           '  vec3 c = sampleCell(cellG);',
           '  float localEdge = 0.0;',
           '  float localVariation = 0.0;',
-          '  if (uBgMode > 1.5 && uBgMode < 2.5) {',
+          '  if (uBgMode > 1.5 && uBgMode < 3.5) {',
           '    float lc = luma(c);',
           '    float lumL0 = luma(sampleCell(cellG + vec2(-1.0, 0.0)));',
           '    float lumR0 = luma(sampleCell(cellG + vec2(1.0, 0.0)));',
@@ -1314,6 +1311,14 @@
           '  vec2 g0 = keyedRGB(c, localEdge);',
           '  float lum = g0.x;',
           '  float fgAlpha = g0.y;',
+          '  if ((uBgMode > 1.5 && uBgMode < 2.5) || (uBgMode > 2.5 && uBgMode < 3.5)) {',
+          '    float flatBackground = 1.0 - smoothstep(0.02, 0.16, localVariation + localEdge);',
+          '    float solidMatte = (uBgMode > 2.5) ? (1.0 - smoothstep(0.54, 0.94, luma(c))) : (1.0 - smoothstep(0.02, 0.16, luma(c)));',
+          '    if (flatBackground * solidMatte > 0.18) {',
+          '      gl_FragColor = vec4(uBg, 1.0);',
+          '      return;',
+          '    }',
+          '  }',
           '  if (uBgMode > 2.5 && uBgMode < 3.5) {',
           '    float cleanWhite = smoothstep(0.54, 0.90, luma(c));',
           '    float cleanSat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));',
@@ -1728,14 +1733,14 @@
 
 
       document.getElementById('scanBtn').addEventListener('click', () => {
-        if (isCleanWhiteMode()) return;
+        if (isSolidBackground()) return;
         const enabled = scanEl.hidden;
         scanEl.hidden = !enabled;
         document.getElementById('scanBtn').classList.toggle('active', enabled);
       });
 
       document.getElementById('vignetteBtn').addEventListener('click', () => {
-        if (isCleanWhiteMode()) return;
+        if (isSolidBackground()) return;
         vignetteOn = !vignetteOn;
         document.getElementById('vignette').hidden = !vignetteOn;
         document.getElementById('vignetteBtn').classList.toggle('active', vignetteOn);
