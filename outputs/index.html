@@ -1335,7 +1335,7 @@
           '  vec2 g0 = keyedRGB(c, localEdge);',
           '  float lum = g0.x;',
           '  float fgAlpha = g0.y;',
-          '  if (uBgMode > 1.5 && uBgMode < 2.5) {',
+          '  if (uBgMode > 1.5 && uBgMode < 3.5) {',
           '    float flatBackground = 1.0 - smoothstep(0.02, 0.16, localVariation + localEdge);',
           '    float solidMatte = (uBgMode > 2.5) ? (1.0 - smoothstep(0.54, 0.94, luma(c))) : (1.0 - smoothstep(0.02, 0.16, luma(c)));',
           '    if (flatBackground * solidMatte > 0.18) {',
