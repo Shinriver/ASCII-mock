@@ -358,9 +358,51 @@
   .ctrl:focus-within output { color: var(--ink); }
 
   input[type="range"] {
+    appearance: none;
+    -webkit-appearance: none;
     width: 100%;
+    height: 16px;
+    margin: 0;
+    background: transparent;
     accent-color: var(--accent);
     cursor: ew-resize;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 999px;
+    background: var(--line-soft);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    margin-top: -5px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  input[type="range"]::-moz-range-track {
+    height: 2px;
+    border-radius: 999px;
+    background: var(--line-soft);
+  }
+
+  input[type="range"]::-moz-range-progress {
+    height: 2px;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
   }
 
   input[type="color"] {
