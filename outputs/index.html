@@ -820,14 +820,13 @@
       return mode === 'colorkey' ? 1 : mode === 'black' ? 2 : mode === 'white' ? 3 : mode === 'off' ? 4 : 0;
     }
 
-    function isSolidBackground() {
+    function isWhiteBackgroundMode() {
       const color = String(params.backgroundColor || params.background || '').toLowerCase();
-      return (params.backgroundMode === 'white' && color === '#ffffff')
-        || (params.backgroundMode === 'black' && color === '#000000');
+      return params.backgroundMode === 'white' && color === '#ffffff';
     }
 
     function updateSourceLayerForBackground() {
-      const suppressed = isSolidBackground();
+      const suppressed = isWhiteBackgroundMode();
       const visible = sourceVideoVisible && !suppressed;
       const sourcePreview = document.getElementById('sourcePreview');
       const sourceBtn = document.getElementById('sourceBtn');
@@ -836,7 +835,7 @@
       sourceBtn.classList.toggle('active', sourceVideoVisible);
       uniforms.uSourceLayer.value = visible ? 1 : 0;
       renderer.setClearAlpha(visible ? 0 : 1);
-      if (isSolidBackground()) {
+      if (isWhiteBackgroundMode()) {
         scanEl.hidden = true;
         document.getElementById('vignette').hidden = true;
         document.getElementById('scanBtn').classList.remove('active');
@@ -1733,14 +1732,14 @@
 
 
       document.getElementById('scanBtn').addEventListener('click', () => {
-        if (isSolidBackground()) return;
+        if (isWhiteBackgroundMode()) return;
         const enabled = scanEl.hidden;
         scanEl.hidden = !enabled;
         document.getElementById('scanBtn').classList.toggle('active', enabled);
       });
 
       document.getElementById('vignetteBtn').addEventListener('click', () => {
-        if (isSolidBackground()) return;
+        if (isWhiteBackgroundMode()) return;
         vignetteOn = !vignetteOn;
         document.getElementById('vignette').hidden = !vignetteOn;
         document.getElementById('vignetteBtn').classList.toggle('active', vignetteOn);
