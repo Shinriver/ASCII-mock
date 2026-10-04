@@ -268,6 +268,10 @@
   .panel.light-surface .ghost:hover { color: #0d100f; border-color: #0d100f; background: rgba(13, 16, 15, 0.06); }
   .panel.light-surface input[type="color"] { border-color: rgba(15, 18, 17, 0.16); }
   .panel.light-surface input[type="range"] { accent-color: #3b4641; }
+  .panel.light-surface .row label { color: #0d100f; }
+  .panel.light-surface .value-input { color: #0d100f; }
+  .panel.light-surface input[type="range"]::-webkit-slider-runnable-track { background: rgba(13, 16, 15, 0.18); }
+  .panel.light-surface input[type="range"]::-moz-range-track { background: rgba(13, 16, 15, 0.18); }
 
   .panel h2 {
     position: sticky;
@@ -838,6 +842,7 @@
       uniforms.uTintColor.value.set(tint[0], tint[1], tint[2]);
       uniforms.uBg.value.set(bg[0], bg[1], bg[2]);
       renderer.setClearColor(new THREE.Color().setRGB(bg[0], bg[1], bg[2], THREE.LinearSRGBColorSpace), sourceVideoVisible ? 0 : 1);
+      document.getElementById('panel').classList.toggle('light-surface', isWhiteBackgroundMode());
     }
 
     function bgModeIndex(mode) {
