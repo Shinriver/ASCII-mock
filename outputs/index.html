@@ -245,6 +245,29 @@
 
   .panel[hidden] { display: none; }
 
+  .panel.light-surface {
+    background: rgba(255, 255, 255, 0.86);
+    border-color: rgba(15, 18, 17, 0.22);
+    color: #0d100f;
+    box-shadow: 0 14px 32px rgba(15, 18, 17, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+
+  .panel.light-surface h2 { background: rgba(255, 255, 255, 0.96); color: #0d100f; border-color: rgba(15, 18, 17, 0.16); }
+  .panel.light-surface .panel-close,
+  .panel.light-surface .ctrl label,
+  .panel.light-surface .dbg { color: rgba(13, 16, 15, 0.72); }
+  .panel.light-surface .panel-section-label { color: #0d100f; border-color: rgba(15, 18, 17, 0.14); }
+  .panel.light-surface .ctrl output,
+  .panel.light-surface .ctrl:focus-within label,
+  .panel.light-surface .ctrl:focus-within output { color: #0d100f; }
+  .panel.light-surface .row select,
+  .panel.light-surface .row input[type="text"] { color: #0d100f; border-color: rgba(15, 18, 17, 0.25); }
+  .panel.light-surface .row select option { background: #ffffff; color: #0d100f; }
+  .panel.light-surface .ghost { color: #0d100f; border-color: rgba(15, 18, 17, 0.28); }
+  .panel.light-surface .ghost.active { color: #0d100f; border-color: #0d100f; }
+  .panel.light-surface .ghost:hover { color: #0d100f; border-color: #0d100f; background: rgba(13, 16, 15, 0.06); }
+  .panel.light-surface input[type="color"] { border-color: rgba(15, 18, 17, 0.3); }
+
   .panel h2 {
     position: sticky;
     top: 0;
@@ -841,6 +864,7 @@
         document.getElementById('scanBtn').classList.remove('active');
         document.getElementById('vignetteBtn').classList.remove('active');
       }
+      document.getElementById('panel').classList.toggle('light-surface', isWhiteBackgroundMode());
     }
 
     function updateDebug() {
