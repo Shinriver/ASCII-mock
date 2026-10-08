@@ -32,7 +32,65 @@ The root `index.html` forwards to `outputs/index.html`, which is also the source
 
 ## Controls
 
-Open `TUNE` to adjust processing, render style, background, resolution, keying, clarity, overlays, source video visibility, reverse loop, and export options. `FPS` shows the live frame rate.
+Open `TUNE` to adjust the editor:
+
+### View
+
+- **Processing** — choose `enhanced` for additional structure and clarity processing, or `realtime` for a lighter live-render path.
+- **Render style** — choose `round-dots`, `ascii`, `dither`, or `dots`.
+
+### Background
+
+- **Background** — choose `black-background`, `white-background`, `green-screen`, `color-key`, or `off`.
+- **Background color** — set the flat compositing color. Light backgrounds automatically switch the interface to a light theme.
+
+### Clarity
+
+- **Resolution** — controls the render grid from 48 to 600 columns; the default is 180.
+- **Bayer** — choose a 4 × 4 or 8 × 8 dithering matrix.
+- **Key** — choose the chroma-key color.
+- **Key threshold** — controls how close a pixel must be to the key color to be removed.
+- **Key softness** — feathers the key transition.
+- **Foreground cutoff** — removes low-confidence foreground pixels.
+- **Green dominance** — adjusts green-screen separation strength.
+- **Spill suppression** — reduces key-color spill around the subject.
+- **Background opacity** — controls the composited background opacity.
+- **Tint strength** and **Tint color** — blend the source tones toward the selected tint.
+- **Glitch** and **Noise** — add optional animated finish variation.
+- **Contrast** — increases or reduces tonal separation.
+- **Edge** — emphasizes flower contours.
+- **Local contrast** — emphasizes differences between nearby cells.
+- **Crease** — strengthens darker folds and petal creases.
+- **Subject boost** — raises the visual priority of the foreground subject.
+
+Values shown beside sliders use a 0–100 scale and can be edited directly.
+
+### Finish
+
+- **Glyph ramp** — customize the character sequence used by `ascii` mode, from light to dark coverage.
+
+### Playback
+
+- **Restart** — returns the source video to the beginning.
+- **Reverse loop** — plays the video forward and backward to create an open-to-close loop.
+
+### Overlays
+
+- **Source video** — places the blurred original video beneath the rendered layer.
+- **Sample background** — samples the video corners to set a color key.
+- **Scanlines**, **Vignette**, and **Matte** — toggle the corresponding display overlays and diagnostics.
+
+### Source
+
+- **Load video** — loads a local video file as the live source.
+- **Defaults** — restores the editor settings to their defaults.
+
+### Export
+
+- **Export WebM** — exports the editor composition as a fixed-frame-rate WebM when browser VP9 WebCodecs are available.
+- **Export GIF** — exports the editor composition as a GIF in the browser.
+
+Both exports include the active render style, background, overlays, source-video layer, and reverse-loop duration. `FPS` in the top bar shows the live frame rate.
 
 ## Project structure
 
