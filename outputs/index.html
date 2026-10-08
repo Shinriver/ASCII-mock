@@ -853,7 +853,7 @@
       uniforms.uTintColor.value.set(tint[0], tint[1], tint[2]);
       uniforms.uBg.value.set(bg[0], bg[1], bg[2]);
       renderer.setClearColor(new THREE.Color().setRGB(bg[0], bg[1], bg[2], THREE.LinearSRGBColorSpace), sourceVideoVisible ? 0 : 1);
-      document.getElementById('panel').classList.toggle('light-surface', isWhiteBackgroundMode());
+      document.getElementById('panel').classList.toggle('light-surface', isLightBackground());
     }
 
     function bgModeIndex(mode) {
@@ -863,6 +863,11 @@
     function isWhiteBackgroundMode() {
       const color = String(params.backgroundColor || params.background || '').toLowerCase();
       return params.backgroundMode === 'white' && color === '#ffffff';
+    }
+
+    function isLightBackground() {
+      const [r, g, b] = hexToRgb01(String(params.backgroundColor || params.background || '#000000'));
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) >= 0.56;
     }
 
     function updateSourceLayerForBackground() {
@@ -881,7 +886,7 @@
         document.getElementById('scanBtn').classList.remove('active');
         document.getElementById('vignetteBtn').classList.remove('active');
       }
-      document.getElementById('panel').classList.toggle('light-surface', isWhiteBackgroundMode());
+      document.getElementById('panel').classList.toggle('light-surface', isLightBackground());
     }
 
     function updateDebug() {
