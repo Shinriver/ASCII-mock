@@ -114,9 +114,21 @@
   .ghost:hover { color: var(--ink); border-color: var(--line); }
   .ghost.active { color: var(--ink); border-color: var(--accent); }
 
-  .stage { position: relative; isolation: isolate; line-height: 0; }
+  .stage {
+    position: relative;
+    isolation: isolate;
+    line-height: 0;
+    overflow: hidden;
+  }
 
-  .stage canvas { display: block; background: transparent; }
+  .stage canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+  }
 
   .source-preview {
     display: none;
@@ -152,7 +164,7 @@
     transform: none;
   }
 
-  .stage canvas { position: relative; z-index: 1; opacity: 1; }
+  .stage canvas { z-index: 1; opacity: 1; }
 
   .panel { z-index: 10; }
 
@@ -939,6 +951,8 @@
         h = Math.floor(availH);
         w = Math.floor(h * aspect);
       }
+      stage.style.width = w + 'px';
+      stage.style.height = h + 'px';
       renderer.setSize(w, h, true);
       renderer.setPixelRatio(dpr);
       ensureAtlas();
