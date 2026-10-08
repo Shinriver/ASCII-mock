@@ -4,7 +4,7 @@ An interactive Three.js video-to-raster visualizer. Luma.flux turns a live HTML 
 
 ## Live demo
 
-[Open Luma.flux](https://shinriver.github.io/ASCII-mock/)
+[Open Luma.flux](https://shinriver.github.io/luma-flux/)
 
 ## Features
 
