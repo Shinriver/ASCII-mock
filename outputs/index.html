@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BLOOM.SEQ - ROSE 042</title>
+<title>Luma.flux — Video Raster</title>
 <script type="importmap">
 {
   "imports": {
@@ -498,7 +498,7 @@
     <header class="card-head">
       <div class="brand">
         <span class="status-dot" aria-hidden="true"></span>
-        <span class="title">// BLOOM.SEQ - ROSE 042</span>
+        <span class="title">// Luma.flux — Video Raster</span>
       </div>
       <div class="head-actions">
         <span class="meta">LIVE · LOOP</span>
@@ -1142,7 +1142,7 @@
       const encodingStartedAt = performance.now();
       await new Promise((resolve, reject) => {
         gif.on('finished', (blob) => {
-          downloadBlob(blob, 'bloom-seq.gif');
+          downloadBlob(blob, 'luma-flux.gif');
           setExportStatus('GIF export ready.');
           URL.revokeObjectURL(workerUrl);
           resolve();
@@ -1208,7 +1208,7 @@
       await encoder.flush();
       encoder.close();
       muxer.finalize();
-      downloadBlob(new Blob([target.buffer], { type: 'video/webm' }), 'bloom-seq.webm');
+      downloadBlob(new Blob([target.buffer], { type: 'video/webm' }), 'luma-flux.webm');
       setExportStatus('WEBM export ready.');
       video.currentTime = previousTime;
       if (wasPlaying) video.play();

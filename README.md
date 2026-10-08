@@ -1,10 +1,10 @@
-# ASCII-mock
+# Luma.flux
 
-An interactive Three.js video-to-ASCII visualizer. The project turns a live HTML video texture into a configurable flower-like render, with ASCII, dots, round dots, and Bayer dither styles.
+An interactive Three.js video-to-raster visualizer. Luma.flux turns a live HTML video texture into a configurable digital image field with ASCII, dots, round dots, and Bayer dither styles.
 
 ## Live demo
 
-[Open BLOOM.SEQ](https://shinriver.github.io/ASCII-mock/)
+[Open Luma.flux](https://shinriver.github.io/ASCII-mock/)
 
 ## Features
 
