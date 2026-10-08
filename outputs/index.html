@@ -489,6 +489,7 @@
           <select id="ctrlRenderStyle">
             <option value="round-dots" selected>round-dots</option>
             <option value="ascii">ascii</option>
+            <option value="dither">dither</option>
             <option value="dots">dots</option>
           </select>
         </div>
@@ -1211,7 +1212,7 @@
         uContrast: { value: params.contrast },
         uEdgeGain: { value: params.edgeGain },
         uProcessingMode: { value: params.processingMode === 'enhanced' ? 1 : 0 },
-        uRenderMode: { value: params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : 0 },
+        uRenderMode: { value: params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : params.renderStyle === 'dither' ? 3 : 0 },
         uSourceLayer: { value: params.sourceVideoVisible ? 1 : 0 },
         uLocalContrast: { value: params.localContrastStrength },
         uCrease: { value: params.creaseStrength },
@@ -1414,10 +1415,11 @@
           '  float dotTone = clamp(tone + (bayerVal - 0.5) * 0.12, 0.0, 1.0);',
           '  float dotRadius = mix(0.045, 0.48, dotTone);',
           '  vec2 dotDelta = cellUV - vec2(0.5);',
-          '  dotDelta.y *= mix(1.0, uCellAspect, step(1.5, uRenderMode));',
+          '  dotDelta.y *= mix(1.0, uCellAspect, step(1.5, uRenderMode) * step(uRenderMode, 2.5));',
           '  float dotDistance = length(dotDelta);',
           '  float dotAlpha = 1.0 - smoothstep(dotRadius - 0.045, dotRadius, dotDistance);',
-          '  glyphAlpha = mix(glyphAlpha, dotAlpha, step(0.5, uRenderMode));',
+          '  glyphAlpha = mix(glyphAlpha, dotAlpha, step(0.5, uRenderMode) * step(uRenderMode, 2.5));',
+          '  glyphAlpha = mix(glyphAlpha, step(bayerVal, tone), step(2.5, uRenderMode));',
           '  vec3 sourceTint = mix(vec3(lum), c, uTintStrength);',
           '  vec3 tint = mix(sourceTint, uTintColor, 0.72);',
           '  tint *= 0.85;',
@@ -1560,7 +1562,7 @@
       const ctrlRenderStyle = document.getElementById('ctrlRenderStyle');
       ctrlRenderStyle.addEventListener('change', () => {
         params.renderStyle = ctrlRenderStyle.value;
-        uniforms.uRenderMode.value = params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : 0;
+        uniforms.uRenderMode.value = params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : params.renderStyle === 'dither' ? 3 : 0;
         updateDebug();
       });
 
@@ -1845,7 +1847,7 @@
         uniforms.uForegroundCutoff.value = params.foregroundCutoff;
         uniforms.uBgMode.value = bgModeIndex(params.backgroundMode);
         uniforms.uProcessingMode.value = params.processingMode === 'enhanced' ? 1 : 0;
-        uniforms.uRenderMode.value = params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : 0;
+        uniforms.uRenderMode.value = params.renderStyle === 'dots' ? 1 : params.renderStyle === 'round-dots' ? 2 : params.renderStyle === 'dither' ? 3 : 0;
         uniforms.uGreenDominance.value = params.greenDominance;
         uniforms.uSpill.value = params.spillSuppression;
         uniforms.uBgOpacity.value = params.backgroundOpacity;
@@ -1895,7 +1897,7 @@
           if (key === 'foregroundCutoff') uniforms.uForegroundCutoff.value = value;
           if (key === 'backgroundMode') { uniforms.uBgMode.value = bgModeIndex(value); ctrlBgMode.value = value; updateDebug(); }
           if (key === 'processingMode') { params.processingMode = value; ctrlProcessing.value = value; uniforms.uProcessingMode.value = value === 'enhanced' ? 1 : 0; updateDebug(); }
-          if (key === 'renderStyle') { params.renderStyle = value; ctrlRenderStyle.value = value; uniforms.uRenderMode.value = value === 'dots' ? 1 : value === 'round-dots' ? 2 : 0; updateDebug(); }
+          if (key === 'renderStyle') { params.renderStyle = value; ctrlRenderStyle.value = value; uniforms.uRenderMode.value = value === 'dots' ? 1 : value === 'round-dots' ? 2 : value === 'dither' ? 3 : 0; updateDebug(); }
           if (key === 'greenDominance') uniforms.uGreenDominance.value = value;
           if (key === 'spillSuppression') uniforms.uSpill.value = value;
           if (key === 'backgroundOpacity') uniforms.uBgOpacity.value = value;
