@@ -63,6 +63,41 @@
     letter-spacing: 0.6px;
   }
 
+  .card.light-surface {
+    background: #ffffff;
+    border-color: rgba(15, 18, 17, 0.16);
+    box-shadow:
+      0 0 0 1px rgba(15, 18, 17, 0.04),
+      0 30px 80px rgba(15, 18, 17, 0.12),
+      0 0 120px rgba(15, 18, 17, 0.04);
+  }
+
+  .card.light-surface .card-head {
+    border-bottom-color: rgba(15, 18, 17, 0.12);
+  }
+
+  .card.light-surface .title,
+  .card.light-surface .head-actions,
+  .card.light-surface .meta {
+    color: #0d100f;
+  }
+
+  .card.light-surface .ghost {
+    color: #0d100f;
+    border-color: rgba(15, 18, 17, 0.14);
+  }
+
+  .card.light-surface .ghost:hover {
+    color: #0d100f;
+    border-color: #0d100f;
+    background: rgba(13, 16, 15, 0.06);
+  }
+
+  .card.light-surface .ghost.active {
+    color: #0d100f;
+    border-color: #0d100f;
+  }
+
   .brand {
     display: flex;
     align-items: center;
@@ -853,6 +888,7 @@
       uniforms.uTintColor.value.set(tint[0], tint[1], tint[2]);
       uniforms.uBg.value.set(bg[0], bg[1], bg[2]);
       renderer.setClearColor(new THREE.Color().setRGB(bg[0], bg[1], bg[2], THREE.LinearSRGBColorSpace), sourceVideoVisible ? 0 : 1);
+      card.classList.toggle('light-surface', isLightBackground());
       document.getElementById('panel').classList.toggle('light-surface', isLightBackground());
     }
 
@@ -886,6 +922,7 @@
         document.getElementById('scanBtn').classList.remove('active');
         document.getElementById('vignetteBtn').classList.remove('active');
       }
+      card.classList.toggle('light-surface', isLightBackground());
       document.getElementById('panel').classList.toggle('light-surface', isLightBackground());
     }
 
